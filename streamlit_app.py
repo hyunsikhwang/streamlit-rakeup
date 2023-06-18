@@ -1,30 +1,50 @@
+# This codes are from https://ohenziblog.com/streamlit_cloud_for_selenium/
+# Thanks to the author for great help.
+
 import streamlit as st
+from selenium import webdriver
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome import service as fs
+from selenium.webdriver import ChromeOptions
+from webdriver_manager.core.utils import ChromeType
+from selenium.webdriver.common.by import By
 
-"""
-## Web scraping on Streamlit Cloud with Selenium
+st.title("Selenium in streamlit cloud")
 
-[![Source](https://img.shields.io/badge/View-Source-<COLOR>.svg)](https://github.com/snehankekre/streamlit-selenium-chrome/)
+press_button = st.button("Scraping")
 
-This is a minimal, reproducible example of how to scrape the web with Selenium and Chrome on Streamlit's Community Cloud.
+if press_button:
+    URL = "https://ohenziblog.com"
 
-Fork this repo, and edit `/streamlit_app.py` to customize this app to your heart's desire. :heart:
-"""
+    options = ChromeOptions()
 
-with st.echo():
-    from selenium import webdriver
-    from selenium.webdriver.chrome.options import Options
-    from selenium.webdriver.chrome.service import Service
-    from webdriver_manager.chrome import ChromeDriverManager
-
-    @st.experimental_singleton
-    def get_driver():
-        return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
-
-    options = Options()
+    options.add_argument("--headless")
     options.add_argument('--disable-gpu')
-    options.add_argument('--headless')
+    options.add_argument('--no-sandbox')
+    options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--remote-debugging-port=9222')
 
-    driver = get_driver()
-    driver.get("http://example.com")
+    CHROMEDRIVER = ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()
+    service = fs.Service(CHROMEDRIVER)
+    driver = webdriver.Chrome(
+                              options=options,
+                              service=service
+                             )
 
-    st.code(driver.page_source)
+    driver.get(URL)
+
+    img = driver.find_element(By.TAG_NAME, 'img')
+    src = img.get_attribute('src')
+
+    # 검색된 이미지를 현재 디렉토리에 저장
+    with open(f"tmp_img.png", "wb") as f:
+        f.write(img.screenshot_as_png)
+
+    # 저장된 이미지를 streamlit 앱에 표시
+    st.image("tmp_img.png")
+
+    # 웹페이지 닫기
+    driver.close()
+
+    # 스크래핑이 완료되었음을 streamlit 앱에 표시
+    st.write("Scraping completed!!!")
