@@ -18,9 +18,11 @@ st.title("Selenium in streamlit cloud")
 
 press_button = st.button("Scraping")
 
+URL_value = 'https://www.kofiabond.or.kr/websquare/websquare.html?w2xPath=/xml/bondint/lastrop/BISLastAskPrcDay.xml&divisionId=MBIS01010010000000&divisionNm=%25EC%259D%25BC%25EC%259E%2590%25EB%25B3%2584&tabIdx=1&w2xHome=/xml/&w2xDocumentRoot='
+URL = st.text_input("Input URL", value=URL_value)
+
 if press_button:
     # URL = "https://ohenziblog.com"
-    URL = 'https://www.kofiabond.or.kr/websquare/websquare.html?w2xPath=/xml/bondint/lastrop/BISLastAskPrcDay.xml&divisionId=MBIS01010010000000&divisionNm=%25EC%259D%25BC%25EC%259E%2590%25EB%25B3%2584&tabIdx=1&w2xHome=/xml/&w2xDocumentRoot='
 
     options = ChromeOptions()
 
