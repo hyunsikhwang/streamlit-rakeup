@@ -1,3 +1,7 @@
 streamlit
 seleniumbase
 webdriver-manager
+bs4
+pandas
+time
+re
