@@ -3,4 +3,3 @@ seleniumbase
 webdriver-manager
 bs4
 pandas
-re
