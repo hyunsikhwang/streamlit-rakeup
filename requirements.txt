@@ -3,3 +3,4 @@ seleniumbase
 webdriver-manager
 bs4
 pandas
+html5lib
