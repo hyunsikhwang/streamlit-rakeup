@@ -214,6 +214,11 @@ def take_HIRA_data(code, datatype, tabletype):
 
     return result_df
 
+def call_HIRA():
+    with st.spinner('Wait for it...'):
+        df = take_HIRA_data(code=code, datatype=datatype, tabletype=tabletype)
+
+    st.write(df)
 
 tab1, tab2 = st.tabs(["KOFIABOND", "HIRA"])
 
@@ -259,11 +264,7 @@ if press_button:
         help_datatype = "datatype: 0-환자수, 1-총사용량, 2-진료금액"
         help_tabletype = "tabletype: 0-성/5세연령단위별, 1-입원외래별, 2-요양기관종별 / 10-KCD코드 성/5세연령단위별(3~4단 자동 구분)"
 
-        code = st.text_input("Input HIRA Code", value='U2233')
+        code = st.text_input("Input HIRA Code", value='U2233', on_change=call_HIRA)
         datatype = st.selectbox("Select Data Type", options=[0, 1, 2], index=0, help=help_datatype)
         tabletype = st.selectbox("Select Table Type", options=[0, 1, 2, 10], index=0, help=help_tabletype)
 
-        with st.spinner('Wait for it...'):
-            df = take_HIRA_data(code=code, datatype=datatype, tabletype=tabletype)
-
-        st.write(df)
