@@ -259,6 +259,7 @@ if press_button:
 
         st.write("HIRA")
         
-        df = take_HIRA_data(code=code, datatype=datatype, tabletype=tabletype)
+        with st.spinner('Wait for it...'):
+            df = take_HIRA_data(code=code, datatype=datatype, tabletype=tabletype)
 
         st.write(df)
