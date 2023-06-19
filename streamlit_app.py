@@ -21,8 +21,7 @@ st.title("Selenium in streamlit cloud")
 
 press_button = st.button("Scraping")
 
-URL_value = 'https://www.kofiabond.or.kr/websquare/websquare.html?w2xPath=/xml/bondint/lastrop/BISLastAskPrcDay.xml&divisionId=MBIS01010010000000&divisionNm=%25EC%259D%25BC%25EC%259E%2590%25EB%25B3%2584&tabIdx=1&w2xHome=/xml/&w2xDocumentRoot='
-URL = st.text_input("Input URL", value=URL_value)
+URL = 'https://www.kofiabond.or.kr/websquare/websquare.html?w2xPath=/xml/bondint/lastrop/BISLastAskPrcDay.xml&divisionId=MBIS01010010000000&divisionNm=%25EC%259D%25BC%25EC%259E%2590%25EB%25B3%2584&tabIdx=1&w2xHome=/xml/&w2xDocumentRoot='
 
 options = ChromeOptions()
 # 팝업창 차단
@@ -216,7 +215,7 @@ def take_HIRA_data(code, datatype, tabletype):
     return result_df
 
 
-tab1, tab2 = st.tabs(["Kofiabond", "HIRA"])
+tab1, tab2 = st.tabs(["KOFIABOND", "HIRA"])
 
 if press_button:
     # URL = "https://ohenziblog.com"
@@ -235,7 +234,7 @@ if press_button:
     # driver.close()
 
     with tab1:
-
+        st.subheader("KOFIABOND")
         try:
             driver = webdriver.Chrome(options=options,
                                       service=service
@@ -255,12 +254,15 @@ if press_button:
             st.write("Scraping completed!!!")
 
     with tab2:
-        code = 'U2233'
-        datatype = 0
-        tabletype = 0
+        st.subheader("HIRA")
 
-        st.write("HIRA")
-        
+        help_datatype = "datatype: 0-환자수, 1-총사용량, 2-진료금액"
+        help_tabletype = "tabletype: 0-성/5세연령단위별, 1-입원외래별, 2-요양기관종별 / 10-KCD코드 성/5세연령단위별(3~4단 자동 구분)"
+
+        code = st.text_input("Input HIRA Code", value='U2233')
+        datatype = st.selectbox("Select Data Type", options=[0, 1, 2], index=0, help=help_datatype)
+        tabletype = st.selectbox("Select Table Type", options=[0, 1, 2, 10], index=0, help=help_tabletype)
+
         with st.spinner('Wait for it...'):
             df = take_HIRA_data(code=code, datatype=datatype, tabletype=tabletype)
 
