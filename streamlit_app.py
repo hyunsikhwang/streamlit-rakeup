@@ -35,10 +35,6 @@ options.add_argument('--remote-debugging-port=9222')
 
 CHROMEDRIVER = ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()
 service = fs.Service(CHROMEDRIVER)
-driver = webdriver.Chrome(
-                            options=options,
-                            service=service
-                            )
 
 #datatype: 0-환자수, 1-총사용량, 2-진료금액
 #tabletype: 0-성/5세연령단위별, 1-입원외래별, 2-요양기관종별 / 10-KCD코드 성/5세연령단위별(3~4단 자동 구분)
@@ -147,14 +143,16 @@ def scrapToDf(hiraStr, hiraCode, datatype, tabletype):
 
 def take_HIRA_data(code, datatype, tabletype):
 
-    global driver
-    
     success = False
     result_df = pd.DataFrame()
 
     while not success:
         try:
             # HIRA 의료통계정보 사이트 내부의 iframe 부분에 대한 URL 호출
+            driver = webdriver.Chrome(
+                                        options=options,
+                                        service=service
+                                        )
 
             if tabletype == 0:
                 # 수가코드 성별/연령5세구간별
@@ -242,6 +240,11 @@ if press_button:
     with tab1:
 
         try:
+            driver = webdriver.Chrome(
+                                        options=options,
+                                        service=service
+                                        )
+            
             element = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.XPATH, '//*[@id="row2"]')))
             soup = driver.find_element(By.XPATH, '//*[@id="grdMain_dataLayer"]').get_attribute('outerHTML')
             soup_bs = BeautifulSoup(soup, 'html5lib')
