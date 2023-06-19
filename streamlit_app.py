@@ -149,10 +149,9 @@ def take_HIRA_data(code, datatype, tabletype):
     while not success:
         try:
             # HIRA 의료통계정보 사이트 내부의 iframe 부분에 대한 URL 호출
-            driver = webdriver.Chrome(
-                                        options=options,
-                                        service=service
-                                        )
+            driver = webdriver.Chrome(options=options,
+                                      service=service
+                                      )
 
             if tabletype == 0:
                 # 수가코드 성별/연령5세구간별
@@ -222,8 +221,6 @@ tab1, tab2 = st.tabs(["Kofiabond", "HIRA"])
 if press_button:
     # URL = "https://ohenziblog.com"
 
-    driver.get(URL)
-
     # img = driver.find_element(By.TAG_NAME, 'img')
     # src = img.get_attribute('src')
 
@@ -240,10 +237,10 @@ if press_button:
     with tab1:
 
         try:
-            driver = webdriver.Chrome(
-                                        options=options,
-                                        service=service
-                                        )
+            driver = webdriver.Chrome(options=options,
+                                      service=service
+                                      )
+            driver.get(URL)
             
             element = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.XPATH, '//*[@id="row2"]')))
             soup = driver.find_element(By.XPATH, '//*[@id="grdMain_dataLayer"]').get_attribute('outerHTML')
