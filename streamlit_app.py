@@ -147,6 +147,8 @@ def scrapToDf(hiraStr, hiraCode, datatype, tabletype):
 
 def take_HIRA_data(code, datatype, tabletype):
 
+    global driver
+    
     success = False
     result_df = pd.DataFrame()
 
