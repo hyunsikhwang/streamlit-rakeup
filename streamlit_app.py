@@ -56,15 +56,22 @@ if press_button:
     # # 웹페이지 닫기
     # driver.close()
 
-    try:
-        element = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.XPATH, '//*[@id="row2"]')))
-        soup = driver.find_element(By.XPATH, '//*[@id="grdMain_dataLayer"]').get_attribute('outerHTML')
-        soup_bs = BeautifulSoup(soup, 'html5lib')
-        df_bond = pd.read_html(str(soup))[0]
-        df_bond.columns = df_bond.columns.get_level_values(2)
-        st.write(df_bond)
+    tab1, tab2 = st.tabs(["Kofiabond", "HIRA"])
 
-    finally:
-        driver.quit()
-        # 스크래핑이 완료되었음을 streamlit 앱에 표시
-        st.write("Scraping completed!!!")
+    with tab1:
+
+        try:
+            element = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.XPATH, '//*[@id="row2"]')))
+            soup = driver.find_element(By.XPATH, '//*[@id="grdMain_dataLayer"]').get_attribute('outerHTML')
+            soup_bs = BeautifulSoup(soup, 'html5lib')
+            df_bond = pd.read_html(str(soup))[0]
+            df_bond.columns = df_bond.columns.get_level_values(2)
+            st.write(df_bond)
+
+        finally:
+            driver.quit()
+            # 스크래핑이 완료되었음을 streamlit 앱에 표시
+            st.write("Scraping completed!!!")
+
+    with tab2:
+        st.write("HIRA")
