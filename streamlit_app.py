@@ -222,28 +222,14 @@ def call_HIRA():
 
 tab1, tab2 = st.tabs(["KOFIABOND", "HIRA"])
 
-if press_button:
-    # URL = "https://ohenziblog.com"
+with tab1:
+    st.subheader("KOFIABOND")
 
-    # img = driver.find_element(By.TAG_NAME, 'img')
-    # src = img.get_attribute('src')
-
-    # # 검색된 이미지를 현재 디렉토리에 저장
-    # with open(f"tmp_img.png", "wb") as f:
-    #     f.write(img.screenshot_as_png)
-
-    # # 저장된 이미지를 streamlit 앱에 표시
-    # st.image("tmp_img.png")
-
-    # # 웹페이지 닫기
-    # driver.close()
-
-    with tab1:
-        st.subheader("KOFIABOND")
+    if press_button:
         try:
             driver = webdriver.Chrome(options=options,
-                                      service=service
-                                      )
+                                        service=service
+                                        )
             driver.get(URL)
             
             element = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.XPATH, '//*[@id="row2"]')))
@@ -258,13 +244,15 @@ if press_button:
             # 스크래핑이 완료되었음을 streamlit 앱에 표시
             st.write("Scraping completed!!!")
 
-    with tab2:
-        st.subheader("HIRA")
+with tab2:
+    st.subheader("HIRA")
 
-        help_datatype = "datatype: 0-환자수, 1-총사용량, 2-진료금액"
-        help_tabletype = "tabletype: 0-성/5세연령단위별, 1-입원외래별, 2-요양기관종별 / 10-KCD코드 성/5세연령단위별(3~4단 자동 구분)"
+    help_datatype = "datatype: 0-환자수, 1-총사용량, 2-진료금액"
+    help_tabletype = "tabletype: 0-성/5세연령단위별, 1-입원외래별, 2-요양기관종별 / 10-KCD코드 성/5세연령단위별(3~4단 자동 구분)"
 
-        code = st.text_input("Input HIRA Code", value='U2233', on_change=call_HIRA)
-        datatype = st.selectbox("Select Data Type", options=[0, 1, 2], index=0, help=help_datatype)
-        tabletype = st.selectbox("Select Table Type", options=[0, 1, 2, 10], index=0, help=help_tabletype)
+    code = st.text_input("Input HIRA Code", value='U2233')
+    datatype = st.selectbox("Select Data Type", options=[0, 1, 2], index=0, help=help_datatype)
+    tabletype = st.selectbox("Select Table Type", options=[0, 1, 2, 10], index=0, help=help_tabletype)
 
+    if press_button:
+        call_HIRA()
