@@ -317,6 +317,6 @@ elif chosen_id == '2':
     lstYr = placeholder.selectbox("Select last year", options=range(2010, 2023), index=2023-2010-1)
 
     if press_button:
-        df = call_HIRA_new(datatype, code, fstYr, lstYr)
+        df = call_HIRA_new(datatype_dict[datatype], code, fstYr, lstYr)
 
         placeholder.write(df)
