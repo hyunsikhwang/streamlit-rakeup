@@ -264,6 +264,16 @@ def call_HIRA_new(datatype, code, fstYr, lstYr):
 
     return df
 
+def convert_df():
+    output = io.BytesIO()
+    writer = pd.ExcelWriter(buffer, engine='xlsxwriter')
+        # Write each dataframe to a different worksheet.
+    df.to_excel(writer, sheet_name='Sheet1', index=False)
+    writer.save()
+
+    processed_data = output.getvalue()
+
+    return processed_data
 
 
 chosen_id = stx.tab_bar(data=[
@@ -317,20 +327,17 @@ elif chosen_id == '2':
     fstYr = placeholder.selectbox("Select first year", options=range(2010, 2023), index=0)
     lstYr = placeholder.selectbox("Select last year", options=range(2010, 2023), index=2023-2010-1)
 
+
+
     if press_button:
         df = call_HIRA_new(datatype_dict[datatype], code, fstYr, lstYr)
 
         placeholder.write(df)
 
-        buffer = io.BytesIO()
+        xlsx = convert_df()
 
-        with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-            # Write each dataframe to a different worksheet.
-            df.to_excel(writer, sheet_name='Sheet1', index=False)
-
-            download = st.download_button(
-                label="Download data as Excel",
-                data=buffer.getvalue(),
-                file_name=f'HIRA_{datatype_dict[datatype]}_{code}_{fstYr}_{lstYr}.xlsx',
-                mime='application/vnd.ms-excel'
+        download = st.download_button(
+            label="Download data as Excel",
+            data=xlsx,
+            file_name=f'HIRA_{datatype_dict[datatype]}_{code}_{fstYr}_{lstYr}.xlsx',
             )
