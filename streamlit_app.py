@@ -303,7 +303,7 @@ elif chosen_id == '2':
 
     help_datatype = "datatype: 1-질병 소분류(3단 상병), 2-질병 소분류(4단 상병), 3-진료행위(검사/수술 등)"
     datatype_dict = {'질병 소분류(3단 상병)':1, '질병 소분류(4단 상병)':2, '진료행위(검사/수술 등)':3}
-    datatype = placeholder.selectbox("Select Data Type", options=[datatype_dict.keys()], index=0, help=help_datatype)
+    datatype = placeholder.selectbox("Select Data Type", options=datatype_dict.keys(), index=0, help=help_datatype)
 
     if datatype_dict[datatype] == 1:
         defaultCode = 'C50'
