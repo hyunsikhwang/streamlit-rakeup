@@ -17,6 +17,7 @@ import time
 import re
 import requests
 import numpy as np
+import extra_streamlit_components as stx
 
 
 st.title("Selenium in streamlit cloud")
@@ -263,9 +264,16 @@ def call_HIRA_new(datatype, code, fstYr, lstYr):
     return df
 
 
-tab1, tab2 = st.tabs(["KOFIABOND", "HIRA"])
 
-with tab1:
+chosen_id = stx.tab_bar(data=[
+    stx.TabBarItemData(id=1, title="KOFIABOND", description="with Selenium"),
+    stx.TabBarItemData(id=2, title="HIRA", description="with Requests")
+], default=1)
+
+# tab1, tab2 = st.tabs(["KOFIABOND", "HIRA"])
+
+if chosen_id == 1:
+# with tab1:
     st.subheader("KOFIABOND")
 
     if press_button:
@@ -286,8 +294,8 @@ with tab1:
             driver.quit()
             # 스크래핑이 완료되었음을 streamlit 앱에 표시
             st.write("Scraping completed!!!")
-
-with tab2:
+elif chosen_id == 2:
+# with tab2:
     st.subheader("HIRA")
 
     help_datatype = "datatype: 1-질병 소분류(3단 상병), 2-질병 소분류(4단 상병), 3-진료행위(검사/수술 등)"
