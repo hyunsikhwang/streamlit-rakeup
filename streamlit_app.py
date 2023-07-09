@@ -273,7 +273,7 @@ chosen_id = stx.tab_bar(data=[
 placeholder = st.container()
 
 # tab1, tab2 = st.tabs(["KOFIABOND", "HIRA"])
-
+st.write(chosen_id)
 if chosen_id == 1:
 # with tab1:
     placeholder.subheader("KOFIABOND")
