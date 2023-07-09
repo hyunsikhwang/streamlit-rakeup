@@ -7,3 +7,4 @@ html5lib
 lxml
 numpy
 extra_streamlit_components
+xlsxwriter
