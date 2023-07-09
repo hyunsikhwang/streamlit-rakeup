@@ -275,7 +275,7 @@ placeholder = st.container()
 # tab1, tab2 = st.tabs(["KOFIABOND", "HIRA"])
 st.write(chosen_id)
 st.write(type(chosen_id))
-if chosen_id == 1:
+if chosen_id == '1':
 # with tab1:
     placeholder.subheader("KOFIABOND")
 
@@ -298,7 +298,7 @@ if chosen_id == 1:
             driver.quit()
             # 스크래핑이 완료되었음을 streamlit 앱에 표시
             placeholder.write("Scraping completed!!!")
-elif chosen_id == 2:
+elif chosen_id == '2':
 # with tab2:
     placeholder.subheader("HIRA")
 
