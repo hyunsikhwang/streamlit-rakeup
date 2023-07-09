@@ -334,7 +334,7 @@ elif chosen_id == '2':
         placeholder.write(df)
 
         file_name = f'HIRA_{datatype_dict[datatype]}_{code}_{fstYr}_{lstYr}.xlsx'
-        df_xlsx = to_excel(df, file_name)
+        df_xlsx = to_excel(df)
 
         download = st.download_button(
             label="📥 Download Current Result",
