@@ -330,7 +330,7 @@ elif chosen_id == '2':
 
             download = st.download_button(
                 label="Download data as Excel",
-                data=buffer,
+                data=buffer.getvalue(),
                 file_name=f'HIRA_{datatype_dict[datatype]}_{code}_{fstYr}_{lstYr}.xlsx',
                 mime='application/vnd.ms-excel'
             )
