@@ -256,7 +256,8 @@ def call_HIRA_new(datatype, code):
     df.drop(['variable'], axis='columns', inplace=True)
     df = df[['항목', '심사년도', '항목구분', '성별구분', '연령구분', 'value']]
     st.write(df)
-    df['value'] = df['value'].str.replace('-', '0').astype(int)
+    df['value'] = pd.to_numeric(df['value'], errors='coerce')
+    df['value'] = df['value'].fillna(0)
 
     return df
 
