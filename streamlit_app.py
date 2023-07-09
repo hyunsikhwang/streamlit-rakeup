@@ -264,12 +264,12 @@ def call_HIRA_new(datatype, code, fstYr, lstYr):
 
     return df
 
-def convert_df():
+def convert_df(df, file_name):
     output = io.BytesIO()
-    writer = pd.ExcelWriter(buffer, engine='xlsxwriter')
+    writer = pd.ExcelWriter(file_name, engine='xlsxwriter')
         # Write each dataframe to a different worksheet.
     df.to_excel(writer, sheet_name='Sheet1', index=False)
-    writer.save()
+    writer.close()
 
     processed_data = output.getvalue()
 
@@ -334,10 +334,11 @@ elif chosen_id == '2':
 
         placeholder.write(df)
 
-        xlsx = convert_df()
+        file_name = f'HIRA_{datatype_dict[datatype]}_{code}_{fstYr}_{lstYr}.xlsx'
+        xlsx = convert_df(df, file_name)
 
         download = st.download_button(
             label="Download data as Excel",
             data=xlsx,
-            file_name=f'HIRA_{datatype_dict[datatype]}_{code}_{fstYr}_{lstYr}.xlsx',
+            file_name=file_name,
             )
