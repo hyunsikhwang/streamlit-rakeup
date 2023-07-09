@@ -18,7 +18,7 @@ import re
 import requests
 import numpy as np
 import extra_streamlit_components as stx
-import io
+from io import BytesIO
 
 
 st.title("Selenium in streamlit cloud")
@@ -264,12 +264,11 @@ def call_HIRA_new(datatype, code, fstYr, lstYr):
 
     return df
 
-def convert_df(df, file_name):
-    output = io.BytesIO()
-    writer = pd.ExcelWriter(file_name, engine='xlsxwriter')
-        # Write each dataframe to a different worksheet.
-    df.to_excel(writer, sheet_name='Sheet1', index=False)
-    writer.close()
+def to_excel(df):
+    output = BytesIO()
+    writer = pd.ExcelWriter(output, engine='xlsxwriter')
+    df.to_excel(writer, index=False, sheet_name='Sheet1')
+    writer.save()
 
     processed_data = output.getvalue()
 
@@ -335,10 +334,10 @@ elif chosen_id == '2':
         placeholder.write(df)
 
         file_name = f'HIRA_{datatype_dict[datatype]}_{code}_{fstYr}_{lstYr}.xlsx'
-        xlsx = convert_df(df, file_name)
+        df_xlsx = to_excel(df, file_name)
 
         download = st.download_button(
-            label="Download data as Excel",
-            data=xlsx,
+            label="📥 Download Current Result",
+            data=df_xlsx,
             file_name=file_name,
             )
