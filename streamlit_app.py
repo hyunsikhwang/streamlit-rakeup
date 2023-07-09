@@ -222,17 +222,18 @@ def call_HIRA():
 
     st.write(df)
 
-def call_HIRA_new(datatype, code):
+def call_HIRA_new(datatype, code, fstYr, lstYr):
 
     if datatype == 1:
         # 질병 소분류(3단 상병) 통계
-        url = f"https://opendata.hira.or.kr/op/opc/olap3thDsInfoTab2.do?olapCd=A{code}&tabGubun=Tab2&gubun=R&sRvYr=2010&eRvYr=2022&sDiagYm=&eDiagYm=&sYm=&eYm="
+        url = f"https://opendata.hira.or.kr/op/opc/olap3thDsInfoTab2.do?olapCd=A{code}&tabGubun=Tab2&gubun=R&sRvYr={fstYr}&eRvYr={lstYr}&sDiagYm=&eDiagYm=&sYm=&eYm="
     elif datatype == 2:
         # 질병 세분류(4단 상병) 통계
-        url = f"https://opendata.hira.or.kr/op/opc/olap4thDsInfoTab2.do?olapCd=A{code}&tabGubun=Tab2&gubun=R&sRvYr=2010&eRvYr=2022&sDiagYm=&eDiagYm=&sYm=&eYm="
+        url = f"https://opendata.hira.or.kr/op/opc/olap4thDsInfoTab2.do?olapCd=A{code}&tabGubun=Tab2&gubun=R&sRvYr={fstYr}&eRvYr={lstYr}&sDiagYm=&eDiagYm=&sYm=&eYm="
     elif datatype == 3:
         # 진료행위(검사/수술 등) 통계
-        url = f"https://opendata.hira.or.kr/op/opc/olapDiagBhvInfoTab2.do?olapCd=1{code}&tabGubun=Tab2&gubun=R&sRvYr=2010&eRvYr=2022&sDiagYm=&eDiagYm=&sYm=&eYm="
+        url = f"https://opendata.hira.or.kr/op/opc/olapDiagBhvInfoTab2.do?olapCd=1{code}&tabGubun=Tab2&gubun=R&sRvYr={fstYr}&eRvYr={lstYr}&sDiagYm=&eDiagYm=&sYm=&eYm="
+    
     res = requests.get(url)
     soup = BeautifulSoup(res.text, 'lxml')
     result = soup.find(attrs={'class':'tblType02 data webScroll'})
@@ -300,7 +301,10 @@ with tab2:
         defaultCode = 'U2233'
     code = st.text_input("Input HIRA Code", value=defaultCode)
 
+    fstYr = st.selectbox("Select first year", options=range(2010, 2023), index=0)
+    lstYr = st.selectbox("Select last year", options=range(2010, 2023), index=2023-2010-1)
+
     if press_button:
-        df = call_HIRA_new(datatype, code)
+        df = call_HIRA_new(datatype, code, fstYr, lstYr)
 
         st.write(df)
