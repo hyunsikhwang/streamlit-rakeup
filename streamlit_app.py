@@ -270,11 +270,13 @@ chosen_id = stx.tab_bar(data=[
     stx.TabBarItemData(id=2, title="HIRA", description="with Requests")
 ], default=1)
 
+placeholder = st.container()
+
 # tab1, tab2 = st.tabs(["KOFIABOND", "HIRA"])
 
 if chosen_id == 1:
 # with tab1:
-    st.subheader("KOFIABOND")
+    placeholder.subheader("KOFIABOND")
 
     if press_button:
         try:
@@ -288,18 +290,19 @@ if chosen_id == 1:
             soup_bs = BeautifulSoup(soup, 'html5lib')
             df_bond = pd.read_html(str(soup))[0]
             df_bond.columns = df_bond.columns.get_level_values(2)
-            st.write(df_bond)
+
+            placeholder.write(df_bond)
 
         finally:
             driver.quit()
             # 스크래핑이 완료되었음을 streamlit 앱에 표시
-            st.write("Scraping completed!!!")
+            placeholder.write("Scraping completed!!!")
 elif chosen_id == 2:
 # with tab2:
-    st.subheader("HIRA")
+    placeholder.subheader("HIRA")
 
     help_datatype = "datatype: 1-질병 소분류(3단 상병), 2-질병 소분류(4단 상병), 3-진료행위(검사/수술 등)"
-    datatype = st.selectbox("Select Data Type", options=[1, 2, 3], index=0, help=help_datatype)
+    datatype = placeholder.selectbox("Select Data Type", options=[1, 2, 3], index=0, help=help_datatype)
 
     if datatype == 1:
         defaultCode = 'C50'
@@ -307,12 +310,12 @@ elif chosen_id == 2:
         defaultCode = 'L400'
     elif datatype == 3:
         defaultCode = 'U2233'
-    code = st.text_input("Input HIRA Code", value=defaultCode)
+    code = placeholder.text_input("Input HIRA Code", value=defaultCode)
 
-    fstYr = st.selectbox("Select first year", options=range(2010, 2023), index=0)
-    lstYr = st.selectbox("Select last year", options=range(2010, 2023), index=2023-2010-1)
+    fstYr = placeholder.selectbox("Select first year", options=range(2010, 2023), index=0)
+    lstYr = placeholder.selectbox("Select last year", options=range(2010, 2023), index=2023-2010-1)
 
     if press_button:
         df = call_HIRA_new(datatype, code, fstYr, lstYr)
 
-        st.write(df)
+        placeholder.write(df)
