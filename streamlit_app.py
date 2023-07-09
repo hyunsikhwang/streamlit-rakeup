@@ -222,13 +222,17 @@ def call_HIRA():
 
     st.write(df)
 
-def call_HIRA_new():
-    # 질병 소분류(3단 상병) 통계
-    # url = "https://opendata.hira.or.kr/op/opc/olap3thDsInfoTab2.do?olapCd=AC50&tabGubun=Tab2&gubun=R&sRvYr=2010&eRvYr=2022&sDiagYm=&eDiagYm=&sYm=&eYm="
-    # 질병 세분류(4단 상병) 통계
-    # url = "https://opendata.hira.or.kr/op/opc/olap4thDsInfoTab2.do?olapCd=AL40&tabGubun=Tab2&gubun=R&sRvYr=2010&eRvYr=2022&sDiagYm=&eDiagYm=&sYm=&eYm="
-    # 진료행위(검사/수술 등) 통계
-    url = "https://opendata.hira.or.kr/op/opc/olapDiagBhvInfoTab2.do?olapCd=1U1511&tabGubun=Tab2&gubun=R&sRvYr=2010&eRvYr=2022&sDiagYm=&eDiagYm=&sYm=&eYm="
+def call_HIRA_new(datatype, code):
+
+    if datatype == 1:
+        # 질병 소분류(3단 상병) 통계
+        url = f"https://opendata.hira.or.kr/op/opc/olap3thDsInfoTab2.do?olapCd=A{code}&tabGubun=Tab2&gubun=R&sRvYr=2010&eRvYr=2022&sDiagYm=&eDiagYm=&sYm=&eYm="
+    elif datatype == 2:
+        # 질병 세분류(4단 상병) 통계
+        url = f"https://opendata.hira.or.kr/op/opc/olap4thDsInfoTab2.do?olapCd=A{code}&tabGubun=Tab2&gubun=R&sRvYr=2010&eRvYr=2022&sDiagYm=&eDiagYm=&sYm=&eYm="
+    elif datatype == 3:
+        # 진료행위(검사/수술 등) 통계
+        url = f"https://opendata.hira.or.kr/op/opc/olapDiagBhvInfoTab2.do?olapCd=1{code}&tabGubun=Tab2&gubun=R&sRvYr=2010&eRvYr=2022&sDiagYm=&eDiagYm=&sYm=&eYm="
     res = requests.get(url)
     soup = BeautifulSoup(res.text, 'lxml')
     result = soup.find(attrs={'class':'tblType02 data webScroll'})
@@ -283,14 +287,18 @@ with tab1:
 with tab2:
     st.subheader("HIRA")
 
-    help_datatype = "datatype: 0-환자수, 1-총사용량, 2-진료금액"
-    help_tabletype = "tabletype: 0-성/5세연령단위별, 1-입원외래별, 2-요양기관종별 / 10-KCD코드 성/5세연령단위별(3~4단 자동 구분)"
+    help_datatype = "datatype: 1-질병 소분류(3단 상병), 2-질병 소분류(4단 상병), 3-진료행위(검사/수술 등)"
+    datatype = st.selectbox("Select Data Type", options=[1, 2, 3], index=0, help=help_datatype)
 
-    code = st.text_input("Input HIRA Code", value='U2233')
-    datatype = st.selectbox("Select Data Type", options=[0, 1, 2], index=0, help=help_datatype)
-    tabletype = st.selectbox("Select Table Type", options=[0, 1, 2, 10], index=0, help=help_tabletype)
+    if datatype == 1:
+        defaultCode = 'C50'
+    elif datatype == 2:
+        defaultCode = 'L400'
+    elif datatype == 3:
+        defaultCode = 'U2233'
+    code = st.text_input("Input HIRA Code", value=defaultCode)
 
     if press_button:
-        df = call_HIRA_new()
+        df = call_HIRA_new(datatype, code)
 
         st.write(df)
