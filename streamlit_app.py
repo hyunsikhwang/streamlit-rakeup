@@ -302,13 +302,14 @@ elif chosen_id == '2':
     placeholder.subheader("HIRA")
 
     help_datatype = "datatype: 1-질병 소분류(3단 상병), 2-질병 소분류(4단 상병), 3-진료행위(검사/수술 등)"
-    datatype = placeholder.selectbox("Select Data Type", options=[1, 2, 3], index=0, help=help_datatype)
+    datatype_dict = {'질병 소분류(3단 상병)':1, '질병 소분류(4단 상병)':2, '진료행위(검사/수술 등)':3}
+    datatype = placeholder.selectbox("Select Data Type", options=[datatype_dict.keys()], index=0, help=help_datatype)
 
-    if datatype == 1:
+    if datatype_dict[datatype] == 1:
         defaultCode = 'C50'
-    elif datatype == 2:
+    elif datatype_dict[datatype] == 2:
         defaultCode = 'L400'
-    elif datatype == 3:
+    elif datatype_dict[datatype] == 3:
         defaultCode = 'U2233'
     code = placeholder.text_input("Input HIRA Code", value=defaultCode)
 
