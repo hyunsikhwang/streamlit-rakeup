@@ -15,6 +15,8 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import time
 import re
+import requests
+import numpy as np
 
 
 st.title("Selenium in streamlit cloud")
@@ -220,6 +222,40 @@ def call_HIRA():
 
     st.write(df)
 
+def call_HIRA_new():
+    # 질병 소분류(3단 상병) 통계
+    # url = "https://opendata.hira.or.kr/op/opc/olap3thDsInfoTab2.do?olapCd=AC50&tabGubun=Tab2&gubun=R&sRvYr=2010&eRvYr=2022&sDiagYm=&eDiagYm=&sYm=&eYm="
+    # 질병 세분류(4단 상병) 통계
+    # url = "https://opendata.hira.or.kr/op/opc/olap4thDsInfoTab2.do?olapCd=AL40&tabGubun=Tab2&gubun=R&sRvYr=2010&eRvYr=2022&sDiagYm=&eDiagYm=&sYm=&eYm="
+    # 진료행위(검사/수술 등) 통계
+    url = "https://opendata.hira.or.kr/op/opc/olapDiagBhvInfoTab2.do?olapCd=1U1511&tabGubun=Tab2&gubun=R&sRvYr=2010&eRvYr=2022&sDiagYm=&eDiagYm=&sYm=&eYm="
+    res = requests.get(url)
+    soup = BeautifulSoup(res.text, 'lxml')
+    result = soup.find(attrs={'class':'tblType02 data webScroll'})
+
+    df = pd.read_html(str(result))[0]
+    df = df.dropna(axis=0)
+
+    df.columns = ['_'.join(col).strip() for col in df.columns.values]
+
+    column = []
+    for col in df.columns:
+        if 'Unnamed' in col:
+            col = col.split('_')[3]
+        column.append(col)
+
+    df.columns = column
+    df = df.melt(id_vars=['항목', '성별구분', '심사년도_연령구분5세'])
+
+    df[['심사년도', '항목구분']] = df['variable'].str.split('_', expand=True)
+    df.rename(columns={'심사년도_연령구분5세':'연령구분'}, inplace=True)
+    df.drop(['variable'], axis='columns', inplace=True)
+    df = df[['항목', '심사년도', '항목구분', '성별구분', '연령구분', 'value']]
+    df['value'] = df['value'].str.replace('-', '0').astype(int)
+
+    return df
+
+
 tab1, tab2 = st.tabs(["KOFIABOND", "HIRA"])
 
 with tab1:
@@ -255,4 +291,6 @@ with tab2:
     tabletype = st.selectbox("Select Table Type", options=[0, 1, 2, 10], index=0, help=help_tabletype)
 
     if press_button:
-        call_HIRA()
+        df = call_HIRA_new()
+
+        st.write(df)
