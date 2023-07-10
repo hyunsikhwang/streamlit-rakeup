@@ -321,15 +321,17 @@ elif chosen_id == '2':
         defaultCode = 'L400'
     elif datatype_dict[datatype] == 3:
         defaultCode = 'U2233'
-    code = placeholder.text_input("Input HIRA Code", value=defaultCode)
+    codes = placeholder.text_input("Input HIRA Code", value=defaultCode)
+    
+    codes = codes.replace(' ', '').split(',')
 
     fstYr = placeholder.selectbox("Select first year", options=range(2010, 2023), index=0)
     lstYr = placeholder.selectbox("Select last year", options=range(2010, 2023), index=2023-2010-1)
 
-
-
     if press_button:
-        df = call_HIRA_new(datatype_dict[datatype], code, fstYr, lstYr)
+        for code in codes:
+            df_code = call_HIRA_new(datatype_dict[datatype], code, fstYr, lstYr)
+            df = pd.concat([df, df_code])
 
         placeholder.write(df)
 
