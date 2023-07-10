@@ -19,6 +19,7 @@ import requests
 import numpy as np
 import extra_streamlit_components as stx
 from io import BytesIO
+from stqdm import stqdm
 
 
 st.title("Selenium in streamlit cloud")
@@ -330,7 +331,7 @@ elif chosen_id == '2':
 
     if press_button:
         df = pd.DataFrame()
-        for code in codes:
+        for code in stqdm(codes):
             df_code = call_HIRA_new(datatype_dict[datatype], code, fstYr, lstYr)
             df = pd.concat([df, df_code])
 
