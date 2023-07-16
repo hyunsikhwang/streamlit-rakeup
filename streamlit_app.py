@@ -348,3 +348,9 @@ elif chosen_id == '2':
             data=df_xlsx,
             file_name=file_name,
             )
+elif chosen_id == '3':
+    placeholder.subheader("KOFIABOND")
+elif chosen_id == '4':
+    placeholder.subheader("복권")
+elif chosen_id == '5':
+    placeholder.subheader("복리후생")
