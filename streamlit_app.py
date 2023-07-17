@@ -21,7 +21,10 @@ import extra_streamlit_components as stx
 from io import BytesIO
 from stqdm import stqdm
 from playwright.sync_api import Playwright, sync_playwright, expect
+import os
 
+
+os.system("playwright install")
 
 st.title("Scarping in streamlit cloud")
 
