@@ -26,7 +26,7 @@ import os
 
 os.system("playwright install")
 
-st.title("Scarping in streamlit cloud")
+st.title("Scraping in streamlit cloud")
 
 press_button = st.button("Scraping")
 
