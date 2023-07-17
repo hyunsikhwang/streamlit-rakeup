@@ -20,6 +20,7 @@ import numpy as np
 import extra_streamlit_components as stx
 from io import BytesIO
 from stqdm import stqdm
+from playwright.sync_api import Playwright, sync_playwright, expect
 
 
 st.title("Scarping in streamlit cloud")
@@ -276,6 +277,22 @@ def to_excel(df):
     return processed_data
 
 
+def run(playwright: Playwright):
+    browser = playwright.chromium.launch(headless=True)
+    context = browser.new_context()
+    page = context.new_page()
+    page.goto("https://www.kofiabond.or.kr/websquare/websquare.html?w2xPath=/xml/bondint/lastrop/BISLastAskPrcDay.xml&divisionId=MBIS01010010000000&divisionNm=%25EC%259D%25BC%25EC%259E%2590%25EB%25B3%2584&tabIdx=1&w2xHome=/xml/&w2xDocumentRoot=")
+    page.get_by_role("link", name="조회").click()
+
+    content = page.content()
+    
+    soup = BeautifulSoup(content, 'html5lib').find_all('table', attrs={'id':'grdMain_body_table'})
+
+    df = pd.read_html(str(soup[0]))[0]
+
+    return df
+
+
 chosen_id = stx.tab_bar(data=[
     stx.TabBarItemData(id=1, title="KOFIABOND", description="with Selenium"),
     stx.TabBarItemData(id=2, title="HIRA", description="with Requests"),
@@ -350,6 +367,9 @@ elif chosen_id == '2':
             )
 elif chosen_id == '3':
     placeholder.subheader("KOFIABOND")
+    with sync_playwright() as playwright:
+        df = run(playwright)
+    st.write(df)
 elif chosen_id == '4':
     placeholder.subheader("복권")
 elif chosen_id == '5':

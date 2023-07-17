@@ -9,3 +9,4 @@ numpy
 extra_streamlit_components
 xlsxwriter
 stqdm
+playwright
