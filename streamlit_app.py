@@ -446,5 +446,11 @@ elif chosen_id == '3':
     st.write(df)
 elif chosen_id == '4':
     placeholder.subheader("복권")
+    with sync_playwright() as playwright:
+        df = run_lottery(playwright)
+    st.write(df)
 elif chosen_id == '5':
     placeholder.subheader("복리후생")
+    with sync_playwright() as playwright:
+        df = run_benecafe(playwright)
+    st.write(df)
