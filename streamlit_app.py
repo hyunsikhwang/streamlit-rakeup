@@ -359,7 +359,7 @@ def run_benecafe(playwright: Playwright):
     content = page.content()
     soup = BeautifulSoup(content, 'html5lib').find_all('strong', attrs={'class':'point'})
 
-    df = pd.read_html(str(soup[0]))[0]
+    df = soup[0].text
 
     context.close()
     browser.close()
