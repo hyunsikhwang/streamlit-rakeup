@@ -22,6 +22,8 @@ from io import BytesIO
 from stqdm import stqdm
 from playwright.sync_api import Playwright, sync_playwright, expect
 import os
+from datetime import datetime
+from pytz import timezone, utc
 
 
 os.system("playwright install")
@@ -303,6 +305,13 @@ def run_lottery(playwright: Playwright):
     id = st.secrets["lottery"]["id"]
     pw = st.secrets["lottery"]["password"]
 
+    KST = timezone('Asia/Seoul')
+    now = datetime.utcnow()
+
+    SeoulTime = utc.localize(now).astimezone(KST)
+    ThisYr0101 = SeoulTime.strftime("%Y0101")
+    curDate = SeoulTime.strftime("%Y%m%d")
+
     browser = playwright.chromium.launch(headless=True)
     context = browser.new_context()
     page = context.new_page()
@@ -323,7 +332,7 @@ def run_lottery(playwright: Playwright):
     page.get_by_role("link", name="조회", exact=True).click()
     page.get_by_role("link", name="조회", exact=True).click()
     page.get_by_role("link", name="조회", exact=True).click()
-    page.goto("https://dhlottery.co.kr/myPage.do?method=lottoBuyList&searchStartDate=20230101&searchEndDate=20230716&lottoId=&nowPage=1")
+    page.goto(f"https://dhlottery.co.kr/myPage.do?method=lottoBuyList&searchStartDate={ThisYr0101}&searchEndDate={curDate}&lottoId=&nowPage=1")
     
     content = page.content()
 
