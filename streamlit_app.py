@@ -280,7 +280,7 @@ def to_excel(df):
     return processed_data
 
 
-def run(playwright: Playwright):
+def run_kofiabond(playwright: Playwright):
     browser = playwright.chromium.launch(headless=True)
     context = browser.new_context()
     page = context.new_page()
@@ -292,6 +292,77 @@ def run(playwright: Playwright):
     soup = BeautifulSoup(content, 'html5lib').find_all('table', attrs={'id':'grdMain_body_table'})
 
     df = pd.read_html(str(soup[0]))[0]
+
+    context.close()
+    browser.close()
+
+    return df
+
+def run_lottery(playwright: Playwright):
+
+    id = st.secrets["lottery"]["id"]
+    pw = st.secrets["lottery"]["password"]
+
+    browser = playwright.chromium.launch(headless=True)
+    context = browser.new_context()
+    page = context.new_page()
+
+    page.goto("https://dhlottery.co.kr/user.do?method=login&returnUrl=")
+    page.get_by_placeholder("아이디").click()
+    page.get_by_placeholder("아이디").fill(id)
+    page.get_by_placeholder("아이디").press("Tab")
+    page.get_by_placeholder("비밀번호").fill(pw)
+    page.get_by_placeholder("비밀번호").press("Tab")
+    page.get_by_role("group", name="LOGIN").get_by_role("link", name="로그인").press("Enter")
+
+    time.sleep(2)
+    page.goto("https://dhlottery.co.kr/userSsl.do?method=myPage")
+
+    page.get_by_role("link", name="구매/당첨").click()
+    page.get_by_role("link", name="1개월").click()
+    page.get_by_role("link", name="조회", exact=True).click()
+    page.get_by_role("link", name="조회", exact=True).click()
+    page.get_by_role("link", name="조회", exact=True).click()
+    page.goto("https://dhlottery.co.kr/myPage.do?method=lottoBuyList&searchStartDate=20230101&searchEndDate=20230716&lottoId=&nowPage=1")
+    
+    content = page.content()
+
+    soup = BeautifulSoup(content, 'html5lib').find_all('table', attrs={'class':'tbl_data tbl_data_col'})
+
+    df = pd.read_html(str(soup[0]))[0]
+
+    context.close()
+    browser.close()
+
+    return df
+
+
+def run_benecafe(playwright: Playwright):
+
+    id = st.secrets["benecafe"]["id"]
+    pw = st.secrets["benecafe"]["password"]
+
+    browser = playwright.chromium.launch(headless=True)
+    context = browser.new_context()
+    page = context.new_page()
+    page.goto("https://cert.benecafe.co.kr/member/login?&cmpyNo=AA5")
+    page.get_by_placeholder("아이디").click()
+    page.get_by_placeholder("아이디").fill(id)
+    page.get_by_placeholder("비밀번호").click()
+    page.get_by_placeholder("비밀번호").fill(pw)
+    page.get_by_role("link", name="로그인", exact=True).click()
+    page.get_by_role("link", name="닫기").click()
+    page.get_by_text("나의정보").nth(1).click()
+    page.locator("a").filter(has_text="포인트 현황").click()
+    page.goto("https://rga.benecafe.co.kr/mywel/pointCurrentInfoCo")
+
+    content = page.content()
+    soup = BeautifulSoup(content, 'html5lib').find_all('strong', attrs={'class':'point'})
+
+    df = pd.read_html(str(soup[0]))[0]
+
+    context.close()
+    browser.close()
 
     return df
 
@@ -371,7 +442,7 @@ elif chosen_id == '2':
 elif chosen_id == '3':
     placeholder.subheader("KOFIABOND")
     with sync_playwright() as playwright:
-        df = run(playwright)
+        df = run_kofiabond(playwright)
     st.write(df)
 elif chosen_id == '4':
     placeholder.subheader("복권")
