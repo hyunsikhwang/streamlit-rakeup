@@ -6,10 +6,10 @@ os.system("playwright install")
 
 import streamlit as st
 from selenium import webdriver
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome import service as fs
+# from webdriver_manager.chrome import ChromeDriverManager
+# from selenium.webdriver.chrome import service as fs
 from selenium.webdriver import ChromeOptions
-from webdriver_manager.core.utils import ChromeType
+# from webdriver_manager.core.utils import ChromeType
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
