@@ -1,6 +1,6 @@
 streamlit
 seleniumbase
-webdriver-manager
+webdriver-manager==3.9.1
 bs4
 pandas
 html5lib
