@@ -1,6 +1,7 @@
 # This codes are from https://ohenziblog.com/streamlit_cloud_for_selenium/
 # Thanks to the author for great help.
 import os
+os.system("python3 -m playwright install")
 os.system("playwright install")
 
 import streamlit as st
@@ -284,6 +285,7 @@ def to_excel(df):
 
 
 def run_kofiabond(playwright: Playwright):
+
     browser = playwright.chromium.launch(headless=True)
     context = browser.new_context()
     page = context.new_page()
