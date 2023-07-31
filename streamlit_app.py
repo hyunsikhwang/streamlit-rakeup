@@ -11,6 +11,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
+from selenium.webdriver.chrome.service import Service
 from bs4 import BeautifulSoup
 import pandas as pd
 import time
@@ -44,7 +45,8 @@ options.add_argument('--disable-dev-shm-usage')
 options.add_argument('--remote-debugging-port=9222')
 
 CHROMEDRIVER = ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()
-service = fs.Service(CHROMEDRIVER)
+# service = fs.Service(CHROMEDRIVER)
+service = Service()
 
 #datatype: 0-환자수, 1-총사용량, 2-진료금액
 #tabletype: 0-성/5세연령단위별, 1-입원외래별, 2-요양기관종별 / 10-KCD코드 성/5세연령단위별(3~4단 자동 구분)
