@@ -1,5 +1,7 @@
 # This codes are from https://ohenziblog.com/streamlit_cloud_for_selenium/
 # Thanks to the author for great help.
+import os
+os.system("playwright install")
 
 import streamlit as st
 from selenium import webdriver
@@ -22,12 +24,9 @@ import extra_streamlit_components as stx
 from io import BytesIO
 from stqdm import stqdm
 from playwright.sync_api import Playwright, sync_playwright, expect
-import os
 from datetime import datetime
 from pytz import timezone, utc
 
-
-os.system("playwright install")
 
 st.title("Scraping in streamlit cloud")
 
