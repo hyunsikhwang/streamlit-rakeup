@@ -1,8 +1,9 @@
 # This codes are from https://ohenziblog.com/streamlit_cloud_for_selenium/
 # Thanks to the author for great help.
 import os
-os.system("python3 -m playwright install")
 os.system("playwright install")
+os.system("playwright install-deps")
+os.system("playwright install webkit")
 
 import streamlit as st
 from selenium import webdriver
