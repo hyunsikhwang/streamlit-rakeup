@@ -11,3 +11,4 @@ extra_streamlit_components
 xlsxwriter
 stqdm
 pytz
+pytest-playwright
