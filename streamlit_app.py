@@ -2,7 +2,7 @@
 # Thanks to the author for great help.
 import os
 os.system("playwright install")
-
+os.system("playwright install chrome")
 
 import streamlit as st
 from selenium import webdriver
