@@ -2,7 +2,7 @@
 # Thanks to the author for great help.
 import subprocess
 import sys
-subprocess.run([f"{sys.executable}", "-m pip install playwright"])
+subprocess.run([f"{sys.executable}", "-m pip3 install playwright"])
 import os
 os.system("playwright install")
 os.system("playwright install chrome")
