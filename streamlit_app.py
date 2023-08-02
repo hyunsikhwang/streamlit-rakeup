@@ -3,7 +3,7 @@
 import os
 os.system("playwright install")
 os.system("playwright install chrome")
-os.system("ls /home/appuser/.cache/ms-playwright/")
+os.system("ls /home/appuser/.cache")
 
 import streamlit as st
 from selenium import webdriver
