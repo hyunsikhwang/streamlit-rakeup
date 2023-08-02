@@ -2,12 +2,6 @@
 # Thanks to the author for great help.
 import os
 os.system("playwright install")
-os.system("playwright install-deps")
-os.system("playwright install webkit")
-import subprocess
-subprocess.run(["playwright", "install"])
-subprocess.run(["playwright", "install-deps"])
-subprocess.run(["playwright", "install webkit"])
 
 
 import streamlit as st
