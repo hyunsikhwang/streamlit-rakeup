@@ -3,6 +3,9 @@
 import os
 os.system("playwright install")
 os.system("playwright install chrome")
+import subprocess
+import sys
+subprocess.run([f"{sys.executable}", "-m playwright install chrome"])
 
 import streamlit as st
 from selenium import webdriver

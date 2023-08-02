@@ -9,5 +9,5 @@ numpy
 extra_streamlit_components
 xlsxwriter
 stqdm
-playwright
+playwright==1.8.0a1
 pytz
