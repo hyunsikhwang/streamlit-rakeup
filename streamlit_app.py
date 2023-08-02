@@ -3,6 +3,7 @@
 import os
 os.system("playwright install")
 os.system("playwright install chrome")
+os.system("/home/appuser/.cache/ms-playwright/playwright install")
 import subprocess
 import sys
 subprocess.run([f"{sys.executable}", "-m playwright install chrome"])
