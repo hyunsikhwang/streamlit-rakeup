@@ -1,3 +1,4 @@
+playwright
 streamlit
 seleniumbase
 webdriver-manager
@@ -9,5 +10,4 @@ numpy
 extra_streamlit_components
 xlsxwriter
 stqdm
-playwright==1.8.0a1
 pytz
