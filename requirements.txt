@@ -1,4 +1,4 @@
-playwright
+playwright==1.20
 streamlit
 seleniumbase
 webdriver-manager
