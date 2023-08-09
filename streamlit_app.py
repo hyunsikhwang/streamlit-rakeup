@@ -1,11 +1,7 @@
 # This codes are from https://ohenziblog.com/streamlit_cloud_for_selenium/
 # Thanks to the author for great help.
-import subprocess
-import sys
-subprocess.run([f"{sys.executable}", "-m pip3 install playwright"])
 import os
 os.system("playwright install")
-os.system("playwright install chrome")
 
 import streamlit as st
 from selenium import webdriver
