@@ -531,6 +531,19 @@ elif chosen_id == '4':
     if st.button("Extract all"):
         with sync_playwright() as playwright:
             df = run_lottery_all(playwright)
+            df_ltr = df.copy()
+
+            df_ltr = df_ltr[(df_ltr['복권명']=='연금복권720')]
+            df_ltr['당첨금'] = df_ltr['당첨금'].str.replace(',', '', regex=True).replace('원', '', regex=True).replace('-', '0', regex=True).astype(int)
+
+            total_buy = df_ltr['구입매수'].sum() * 1000
+            count_buy = df_ltr['구입매수'].count()
+            total_won = df_ltr['당첨금'].sum()
+            count_won = df_ltr[(df_ltr['당첨금']>0)]['당첨금'].count()
+
+            st.write(f'{total_buy:,.0f}원 구입해서, {total_won:,.0f}원 당첨')
+            st.write(f'금액기준: {total_won/total_buy:.1%}, 횟수기준: {count_won/count_buy:.1%}')
+        
         st.write(df)
 elif chosen_id == '5':
     placeholder.subheader("복리후생")
