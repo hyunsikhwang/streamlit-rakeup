@@ -26,6 +26,7 @@ from stqdm import stqdm
 from playwright.sync_api import Playwright, sync_playwright, expect
 from datetime import datetime
 from pytz import timezone, utc
+from stqdm import stqdm
 
 
 st.title("Scraping in streamlit cloud")
@@ -347,6 +348,71 @@ def run_lottery(playwright: Playwright):
 
     return df
 
+def run_lottery_all(playwright: Playwright) -> pd.DataFrame:
+    id = st.secrets["lottery"]["id"]
+    pw = st.secrets["lottery"]["password"]
+
+    KST = timezone('Asia/Seoul')
+    now = datetime.utcnow()
+
+    SeoulTime = utc.localize(now).astimezone(KST)
+    curDate = SeoulTime.strftime("%Y%m%d")
+
+    browser = playwright.chromium.launch(headless=True)
+    context = browser.new_context()
+    page = context.new_page()
+
+    page.goto("https://dhlottery.co.kr/user.do?method=login&returnUrl=")
+    page.get_by_placeholder("아이디").click()
+    page.get_by_placeholder("아이디").fill(id)
+    page.get_by_placeholder("아이디").press("Tab")
+    page.get_by_placeholder("비밀번호").fill(pw)
+    page.get_by_placeholder("비밀번호").press("Tab")
+    page.get_by_role("group", name="LOGIN").get_by_role("link", name="로그인").press("Enter")
+
+    time.sleep(2)
+
+    # 마지막 페이지 찾기
+    page.goto(f"https://dhlottery.co.kr/myPage.do?method=lottoBuyList&searchStartDate=20200502&searchEndDate={curDate}&lottoId=&nowPage=100000")
+
+    content_end = page.content()
+    soup_end = BeautifulSoup(content_end, 'html5lib').find_all('div', attrs={'class':'paginate_common'})
+    for pageList in soup_end:
+        for pagenum in pageList.find_all('a'):
+            lastPageStr = pagenum.text.replace(" ", "")
+
+    lastPageNum = int(lastPageStr) + 1
+    print(lastPageNum)
+
+    page.goto("https://dhlottery.co.kr/userSsl.do?method=myPage")
+
+    page.get_by_role("link", name="구매/당첨").click()
+    page.get_by_role("link", name="1개월").click()
+    page.get_by_role("link", name="조회", exact=True).click()
+    page.get_by_role("link", name="조회", exact=True).click()
+    page.get_by_role("link", name="조회", exact=True).click()
+
+    df_all = pd.DataFrame()
+    
+    for i in stqdm(range(1, lastPageNum)):
+        page.goto(f"https://dhlottery.co.kr/myPage.do?method=lottoBuyList&searchStartDate=20200502&searchEndDate={curDate}&lottoId=&nowPage={i}")
+    # print(page.content())
+        content = page.content()
+        soup = BeautifulSoup(content, 'html5lib').find_all('table', attrs={'class':'tbl_data tbl_data_col'})
+
+        df = pd.read_html(str(soup[0]))[0]
+        df_all = pd.concat([df_all, df])
+
+    # with open('lottery.txt', 'w') as textfile:
+    #     textfile.write(page.content())
+    
+    df_all.to_excel('lottery.xlsx', index=False)
+
+    # ---------------------
+    context.close()
+    browser.close()
+
+    return df_all
 
 def run_benecafe(playwright: Playwright):
 
@@ -452,16 +518,23 @@ elif chosen_id == '2':
             )
 elif chosen_id == '3':
     placeholder.subheader("KOFIABOND")
-    with sync_playwright() as playwright:
-        df = run_kofiabond(playwright)
-    st.write(df)
+    if press_button:
+        with sync_playwright() as playwright:
+            df = run_kofiabond(playwright)
+        st.write(df)
 elif chosen_id == '4':
     placeholder.subheader("복권")
-    with sync_playwright() as playwright:
-        df = run_lottery(playwright)
-    st.write(df)
+    if press_button:
+        with sync_playwright() as playwright:
+            df = run_lottery(playwright)
+        st.write(df)
+    if st.button("Extract all"):
+        with sync_playwright() as playwright:
+            df = run_lottery_all(playwright)
+        st.write(df)
 elif chosen_id == '5':
     placeholder.subheader("복리후생")
-    with sync_playwright() as playwright:
-        df = run_benecafe(playwright)
-    st.write(df)
+    if press_button:
+        with sync_playwright() as playwright:
+            df = run_benecafe(playwright)
+        st.write(df)
