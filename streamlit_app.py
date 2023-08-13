@@ -450,6 +450,7 @@ chosen_id = stx.tab_bar(data=[
     stx.TabBarItemData(id=3, title="KOFIABOND", description="with Playwright"),
     stx.TabBarItemData(id=4, title="복권", description="with Playwright"),
     stx.TabBarItemData(id=5, title="복리후생", description="with Playwright"),
+    stx.TabBarItemData(id=6, title="tmoney", description="with Playwright"),
 ], default=1)
 
 placeholder = st.container()
@@ -551,3 +552,5 @@ elif chosen_id == '5':
         with sync_playwright() as playwright:
             df = run_benecafe(playwright)
         st.write(df)
+elif chosen_id == '6':
+    placeholder.subheader("티머니")
