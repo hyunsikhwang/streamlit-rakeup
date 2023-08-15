@@ -27,6 +27,7 @@ from playwright.sync_api import Playwright, sync_playwright, expect
 from datetime import datetime
 from pytz import timezone, utc
 from stqdm import stqdm
+import streamlit_authenticator as stauth
 
 
 st.title("Scraping in streamlit cloud")
@@ -554,3 +555,7 @@ elif chosen_id == '5':
         st.write(df)
 elif chosen_id == '6':
     placeholder.subheader("티머니")
+    tm_pw = st.text_input("Input passkey", type="password")
+    stl_pw = st.secrets["general"]["password"]
+    if tm_pw = stl_pw:
+        st.write("Success!")
