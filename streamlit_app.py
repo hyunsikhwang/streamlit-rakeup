@@ -557,5 +557,5 @@ elif chosen_id == '6':
     placeholder.subheader("티머니")
     tm_pw = st.text_input("Input passkey", type="password")
     stl_pw = st.secrets["general"]["password"]
-    if tm_pw = stl_pw:
+    if tm_pw == stl_pw:
         st.write("Success!")
