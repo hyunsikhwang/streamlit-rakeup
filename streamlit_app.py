@@ -449,7 +449,7 @@ def run_tmoney(playwright: Playwright):
     id = st.secrets["tmoney"]["id"]
     pw = st.secrets["tmoney"]["password"]
 
-    browser = playwright.chromium.launch(headless=False)
+    browser = playwright.chromium.launch(headless=True)
     context = browser.new_context()
     page = context.new_page()
     page.goto("https://pay.tmoney.co.kr/ncs/pct/mtmn/ReadTrprInqr.dev")
