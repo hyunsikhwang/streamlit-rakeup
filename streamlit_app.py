@@ -445,6 +445,48 @@ def run_benecafe(playwright: Playwright):
     return df
 
 
+def run_tmoney(playwright: Playwright):
+    id = st.secrets["tmoney"]["id"]
+    pw = st.secrets["tmoney"]["password"]
+
+    browser = playwright.chromium.launch(headless=False)
+    context = browser.new_context()
+    page = context.new_page()
+    page.goto("https://pay.tmoney.co.kr/ncs/pct/mtmn/ReadTrprInqr.dev")
+    page.get_by_placeholder("아이디").click()
+    page.get_by_placeholder("아이디").fill(id)
+    page.get_by_placeholder("비밀번호").click()
+    page.get_by_placeholder("비밀번호").fill(pw)
+    page.get_by_title("로그인하기").press("Enter")
+
+    time.sleep(2)
+
+    page.get_by_label("동의함").click()
+    page.get_by_role("combobox", name="사용내역 카드선택").select_option(value="1010010071641385")
+    page.get_by_text("최근1년").click()
+    page.get_by_role("link", name="조회", exact=True).click()
+
+    content = page.content()
+
+    soup = BeautifulSoup(content, 'html5lib').find_all('table', attrs={'id':'protable'})
+
+    time.sleep(3)
+
+    soup_tr1 = str(soup[0])
+    soup_tr2 = str(soup[1])
+    soup_cs = str(soup[2])
+
+    df_tr1 = pd.read_html(soup_tr1)[0]
+    df_tr2 = pd.read_html(soup_tr2)[0]
+    df_cs = pd.read_html(soup_cs)[0]
+
+    # ---------------------
+    context.close()
+    browser.close()
+
+    return df_tr1, df_tr2, df_cs
+
+
 chosen_id = stx.tab_bar(data=[
     stx.TabBarItemData(id=1, title="KOFIABOND", description="with Selenium"),
     stx.TabBarItemData(id=2, title="HIRA", description="with Requests"),
@@ -559,3 +601,8 @@ elif chosen_id == '6':
     stl_pw = st.secrets["general"]["password"]
     if tm_pw == stl_pw:
         st.write("Success!")
+        with sync_playwright() as playwright:
+            df_tr1, df_tr2, df_cs = run_tmoney(playwright)
+        st.write(df_tr1)
+        st.write(df_tr2)
+        st.write(df_cs)
