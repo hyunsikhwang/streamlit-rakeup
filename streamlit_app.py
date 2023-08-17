@@ -466,11 +466,10 @@ def run_tmoney(playwright: Playwright):
     page.get_by_text("최근1년").click()
     page.get_by_role("link", name="조회", exact=True).click()
 
-    content = page.content()
-
-    soup = BeautifulSoup(content, 'html5lib').find_all('table', attrs={'id':'protable'})
-
     time.sleep(3)
+
+    content = page.content()
+    soup = BeautifulSoup(content, 'html5lib').find_all('table', attrs={'id':'protable'})
 
     soup_tr1 = str(soup[0])
     soup_tr2 = str(soup[1])
