@@ -12,4 +12,3 @@ xlsxwriter
 stqdm
 pytz
 streamlit-authenticator
-json
