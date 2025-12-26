@@ -28,6 +28,7 @@ from datetime import datetime
 from pytz import timezone, utc
 from stqdm import stqdm
 import streamlit_authenticator as stauth
+import json
 
 
 st.title("Scraping in streamlit cloud")
@@ -436,15 +437,15 @@ def run_benecafe(playwright: Playwright):
     # page.goto("https://rga.benecafe.co.kr/mywel/pointCurrentInfoCo")
 
     content = page.content()
-    st.write(content)
-    soup = BeautifulSoup(content, 'html5lib').find_all('strong', attrs={'class':'point'})
+    # st.write(content)
+    # soup = BeautifulSoup(content, 'html5lib').find_all('strong', attrs={'class':'point'})
 
-    df = soup[0].text
+    # df = soup[0].text
 
     context.close()
     browser.close()
 
-    return df
+    return content
 
 
 def run_tmoney(playwright: Playwright):
@@ -486,6 +487,54 @@ def run_tmoney(playwright: Playwright):
     browser.close()
 
     return df_tr1, df_tr2, df_cs
+
+def benecafe_json_write(html_content: str):
+    json_match = re.search(r'<pre>(.*?)</pre>', html_content, re.DOTALL)
+    if json_match:
+        json_str = json_match.group(1).strip()
+        try:
+            # JSON 파싱
+            data = json.loads(json_str)
+            
+            # 성공 여부 확인
+            if data.get("success"):
+                # welfarecardDemandList 추출
+                demand_list = data["resultMap"]["welfarecardDemandList"]
+                
+                # 각 항목을 예쁘게 출력
+                for idx, item in enumerate(demand_list, start=1):
+                    st.subheader(f"항목 {idx}")
+                    
+                    # 주요 정보 선택적으로 출력 (null 값은 제외)
+                    key_info = {
+                        "영수증 번호": item.get("slsRcvNo"),
+                        "카드사": item.get("crdcoNm"),
+                        "사용 일자": item.get("crtcrdUseDd"),
+                        "사용 시간": item.get("crtcrdUseHh"),
+                        "사용 금액": item.get("usePrc"),
+                        "지불 일자": item.get("prsnPayDd"),
+                        "상점 이름": item.get("mcnsNm"),
+                        "상점 유형": item.get("mcnsBntpNm"),
+                        "등록 여부": item.get("regYn"),
+                        "환불 여부": item.get("rtnYn"),
+                        "신청 상태": item.get("cstApplStatNm"),
+                        "신청 금액": item.get("applPrc")
+                    }
+                    
+                    # null이나 None인 값 제거
+                    filtered_info = {k: v for k, v in key_info.items() if v is not None}
+                    
+                    # Markdown으로 예쁘게 출력
+                    for key, value in filtered_info.items():
+                        st.markdown(f"**{key}:** {value}")
+                    
+                    st.divider()  # 구분선 추가
+            else:
+                st.error("JSON 데이터가 성공적으로 처리되지 않았습니다.")
+        except json.JSONDecodeError:
+            st.error("JSON 파싱 중 오류가 발생했습니다.")
+    else:
+        st.error("HTML에서 JSON을 추출할 수 없습니다.")
 
 
 chosen_id = stx.tab_bar(data=[
@@ -594,8 +643,9 @@ elif chosen_id == '5':
     placeholder.subheader("복리후생")
     if press_button:
         with sync_playwright() as playwright:
-            df = run_benecafe(playwright)
-        st.write(df)
+            html_content = run_benecafe(playwright)
+        benecafe_json_write(html_content)
+        # st.write(res)
 elif chosen_id == '6':
     placeholder.subheader("티머니")
     tm_pw = st.text_input("Input passkey", type="password")
