@@ -429,9 +429,9 @@ def run_benecafe(playwright: Playwright):
     page.get_by_placeholder("비밀번호").click()
     page.get_by_placeholder("비밀번호").fill(pw)
     page.get_by_role("link", name="로그인", exact=True).click()
-    page.get_by_role("link", name="닫기").click()
-    page.get_by_text("나의정보").nth(1).click()
-    page.locator("a").filter(has_text="포인트 현황").click()
+    # page.get_by_role("link", name="닫기").click()
+    # page.get_by_text("나의정보").nth(1).click()
+    # page.locator("a").filter(has_text="포인트 현황").click()
     page.goto("https://rga.benecafe.co.kr/mywel/pointCurrentInfoCo")
 
     content = page.content()
