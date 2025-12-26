@@ -429,12 +429,14 @@ def run_benecafe(playwright: Playwright):
     page.get_by_placeholder("비밀번호").click()
     page.get_by_placeholder("비밀번호").fill(pw)
     page.get_by_role("link", name="로그인", exact=True).click()
+    page.goto("https://rga.benecafe.co.kr/mywel/getWelfarecardDemandListVer?crdcoNo=HA&rtnTpCd=&crtcrdProdNo=&ecluCrtcrdRealHhAskYn=N&necluCrtcrdRealHhAskYn=N&searchStartDate=2025-11-26&searchEndDate=2025-12-26&applStatCd=00&alreadyApplicationExclustion=&multiCrtcrdRealYn=false&adminPswd=")
     # page.get_by_role("link", name="닫기").click()
     # page.get_by_text("나의정보").nth(1).click()
     # page.locator("a").filter(has_text="포인트 현황").click()
-    page.goto("https://rga.benecafe.co.kr/mywel/pointCurrentInfoCo")
+    # page.goto("https://rga.benecafe.co.kr/mywel/pointCurrentInfoCo")
 
     content = page.content()
+    st.write(content)
     soup = BeautifulSoup(content, 'html5lib').find_all('strong', attrs={'class':'point'})
 
     df = soup[0].text
