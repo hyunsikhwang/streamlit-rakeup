@@ -491,7 +491,7 @@ chosen_id = stx.tab_bar(data=[
     stx.TabBarItemData(id=2, title="HIRA", description="with Requests"),
     stx.TabBarItemData(id=3, title="KOFIABOND", description="with Playwright"),
     # stx.TabBarItemData(id=4, title="복권", description="with Playwright"),
-    # stx.TabBarItemData(id=5, title="복리후생", description="with Playwright"),
+    stx.TabBarItemData(id=5, title="복리후생", description="with Playwright"),
     # stx.TabBarItemData(id=6, title="tmoney", description="with Playwright"),
 ], default=1)
 
