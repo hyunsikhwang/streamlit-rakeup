@@ -430,6 +430,17 @@ def run_benecafe(playwright: Playwright):
     page.get_by_placeholder("비밀번호").click()
     page.get_by_placeholder("비밀번호").fill(pw)
     page.get_by_role("link", name="로그인", exact=True).click()
+
+    # 로그인 성공 확인: "나의정보" 텍스트가 나타날 때까지 대기 (로그인 후 보이는 요소로 가정)
+    try:
+        page.wait_for_selector('text="나의정보"', timeout=5000)  # 5초 대기, 실패 시 TimeoutError
+        st.write("로그인이 성공적으로 완료되었습니다.")  # Streamlit으로 로그 출력 (옵션)
+    except TimeoutError:
+        st.error("로그인 실패: '나의정보' 요소가 나타나지 않았습니다. ID/PW를 확인하세요.")
+        context.close()
+        browser.close()
+        return None  # 실패 시 None 반환
+    
     # 페이지 객체 (page)가 이미 존재한다고 가정
     locator = page.get_by_role("link", name="닫기")
     if locator.count() > 0:
