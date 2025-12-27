@@ -541,25 +541,114 @@ def run_tmoney(playwright: Playwright):
     return df_tr1, df_tr2, df_cs
 
 def benecafe_json_write(html_content: str):
-# Parse the JSON string
-    data = json.loads(html_content)
-    
-    # Extract the list from resultMap
-    if data.get('success') and data.get('resultMap') and 'welfarecardDemandList' in data['resultMap']:
-        demand_list = data['resultMap']['welfarecardDemandList']
+    """
+    JSON 형태의 문자열(html_content)을 받아 Streamlit 화면에
+    직관적인 대시보드와 표 형태로 출력하는 함수입니다.
+    """
+    try:
+        # 1. JSON 파싱 (문자열인 경우 변환, 딕셔너리인 경우 그대로 사용)
+        if isinstance(html_content, str):
+            data = json.loads(html_content)
+        else:
+            data = html_content
+
+        # 2. 데이터 리스트 추출
+        # 데이터 구조: resultMap -> welfarecardDemandList
+        items = data.get("resultMap", {}).get("welfarecardDemandList", [])
+
+        if not items:
+            st.warning("⚠️ 표시할 데이터가 없습니다.")
+            return
+
+        # 3. 데이터프레임 변환 및 전처리
+        df = pd.DataFrame(items)
+
+        # 필요한 컬럼만 선택 및 순서 지정 (직관적인 순서로 배치)
+        target_cols = [
+            "crdcoNm",       # 카드사
+            "crtcrdUseDd",   # 사용일자
+            "crtcrdUseHh",   # 사용시간
+            "mcnsNm",        # 가맹점명
+            "mcnsBntpNm",    # 업종
+            "usePrc",        # 이용금액
+            "applPrc",       # 신청금액
+            "cstApplStatNm"  # 상태(전송완료 등)
+        ]
         
-        st.write("### Welfare Card Demand List")
-        st.write(f"Total items: {len(demand_list)}")
+        # 데이터에 없는 컬럼이 있을 경우를 대비해 교집합만 선택
+        existing_cols = [col for col in target_cols if col in df.columns]
+        df_display = df[existing_cols].copy()
+
+        # 4. 데이터 가공 (보기 좋게 꾸미기)
         
-        for idx, item in enumerate(demand_list, start=1):
-            st.write(f"#### Item {idx}")
-            # Display key-value pairs for readability
-            for key, value in item.items():
-                if value is not None:  # Skip null values for cleaner output
-                    st.write(f"- **{key}**: {value}")
-            st.write("---")  # Separator between items
-    else:
-        st.write("No valid data found in the provided JSON.")
+        # 4-1. 컬럼명 한글로 변경
+        col_map = {
+            "crdcoNm": "카드사",
+            "crtcrdUseDd": "사용일자",
+            "crtcrdUseHh": "사용시간",
+            "mcnsNm": "가맹점",
+            "mcnsBntpNm": "업종",
+            "usePrc": "이용금액",
+            "applPrc": "신청금액",
+            "cstApplStatNm": "처리상태"
+        }
+        df_display.rename(columns=col_map, inplace=True)
+
+        # 4-2. 시간 포맷팅 (HHMMSS -> HH:MM:SS)
+        if "사용시간" in df_display.columns:
+            df_display["사용시간"] = df_display["사용시간"].apply(
+                lambda x: f"{x[:2]}:{x[2:4]}:{x[4:]}" if x and len(x) == 6 else x
+            )
+
+        # 4-3. 날짜 포맷팅 (YYYY-MM-DD -> YYYY.MM.DD)
+        if "사용일자" in df_display.columns:
+             df_display["사용일자"] = pd.to_datetime(df_display["사용일자"]).dt.strftime('%Y.%m.%d')
+
+
+        # 5. Streamlit 화면 출력
+        
+        st.subheader("💳 복지카드 사용 내역 조회")
+        
+        # 5-1. 요약 메트릭 (총 건수, 총 이용금액 합계)
+        total_count = len(df_display)
+        total_amount = df_display["이용금액"].sum() if "이용금액" in df_display.columns else 0
+
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric(label="총 사용 건수", value=f"{total_count}건")
+        with col2:
+            st.metric(label="총 이용 금액", value=f"{total_amount:,}원")
+        
+        st.divider() # 구분선
+
+        # 5-2. 메인 데이터 테이블
+        # st.dataframe을 사용하며 column_config를 통해 금액 포맷 등을 지정
+        st.dataframe(
+            df_display,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "이용금액": st.column_config.NumberColumn(
+                    "이용금액",
+                    format="%d원"  # 1,000원 단위 콤마 자동 적용
+                ),
+                "신청금액": st.column_config.NumberColumn(
+                    "신청금액",
+                    format="%d원"
+                ),
+                "처리상태": st.column_config.TextColumn(
+                    "처리상태",
+                    help="현재 결제 처리 상태입니다."
+                )
+            }
+        )
+
+        # 5-3. (옵션) 원본 데이터 확인용 익스팬더
+        with st.expander("🔍 원본 데이터(JSON) 확인하기"):
+            st.json(data)
+
+    except Exception as e:
+        st.error(f"데이터를 처리하는 중 오류가 발생했습니다: {e}")
 
 chosen_id = stx.tab_bar(data=[
     stx.TabBarItemData(id=1, title="KOFIABOND", description="with Selenium"),
