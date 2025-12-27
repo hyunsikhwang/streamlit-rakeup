@@ -28,7 +28,7 @@ from datetime import datetime
 from pytz import timezone, utc
 from stqdm import stqdm
 import streamlit_authenticator as stauth
-import json
+import json, html
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import Error as PlaywrightError
 from pathlib import Path
