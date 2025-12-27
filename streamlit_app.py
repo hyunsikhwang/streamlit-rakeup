@@ -540,54 +540,96 @@ def run_tmoney(playwright: Playwright):
 
     return df_tr1, df_tr2, df_cs
 
-def benecafe_json_write(html_content: str):
-    json_match = re.search(r'<pre>(.*?)</pre>', html_content, re.DOTALL)
-    if json_match:
-        json_str = json_match.group(1).strip()
-        try:
-            # JSON 파싱
-            data = json.loads(json_str)
-            
-            # 성공 여부 확인
-            if data.get("success"):
-                # welfarecardDemandList 추출
-                demand_list = data["resultMap"]["welfarecardDemandList"]
-                
-                # 각 항목을 예쁘게 출력
-                for idx, item in enumerate(demand_list, start=1):
-                    st.subheader(f"항목 {idx}")
-                    
-                    # 주요 정보 선택적으로 출력 (null 값은 제외)
-                    key_info = {
-                        "영수증 번호": item.get("slsRcvNo"),
-                        "카드사": item.get("crdcoNm"),
-                        "사용 일자": item.get("crtcrdUseDd"),
-                        "사용 시간": item.get("crtcrdUseHh"),
-                        "사용 금액": item.get("usePrc"),
-                        "지불 일자": item.get("prsnPayDd"),
-                        "상점 이름": item.get("mcnsNm"),
-                        "상점 유형": item.get("mcnsBntpNm"),
-                        "등록 여부": item.get("regYn"),
-                        "환불 여부": item.get("rtnYn"),
-                        "신청 상태": item.get("cstApplStatNm"),
-                        "신청 금액": item.get("applPrc")
-                    }
-                    
-                    # null이나 None인 값 제거
-                    filtered_info = {k: v for k, v in key_info.items() if v is not None}
-                    
-                    # Markdown으로 예쁘게 출력
-                    for key, value in filtered_info.items():
-                        st.markdown(f"**{key}:** {value}")
-                    
-                    st.divider()  # 구분선 추가
-            else:
-                st.error("JSON 데이터가 성공적으로 처리되지 않았습니다.")
-        except json.JSONDecodeError:
-            st.error("JSON 파싱 중 오류가 발생했습니다.")
-    else:
-        st.error("HTML에서 JSON을 추출할 수 없습니다.")
+def benecafe_json_write(html_content: str, show_raw: bool = False, show_detail: bool = False):
+    # 1) JSON 문자열 추출(<pre> 우선, 없으면 { ... } 범위)
+    s = html.unescape((html_content or "").strip())
+    m = re.search(r"<pre[^>]*>(.*?)</pre>", s, flags=re.S | re.I)
+    js = (m.group(1).strip() if m else None)
+    if not js:
+        a, b = s.find("{"), s.rfind("}")
+        js = s[a:b+1].strip() if (a != -1 and b > a) else None
+    if not js:
+        st.error("HTML/텍스트에서 JSON을 추출할 수 없습니다.")
+        return None
 
+    # 2) 파싱 + 필수 구조 확인
+    try:
+        data = json.loads(js)
+    except json.JSONDecodeError as e:
+        st.error(f"JSON 파싱 오류: {e}")
+        st.code(js)
+        return None
+
+    if not data.get("success"):
+        st.error("success=true가 아닙니다.")
+        if show_raw: st.json(data)
+        return None
+
+    items = (data.get("resultMap") or {}).get("welfarecardDemandList") or []
+    if not items:
+        st.warning("welfarecardDemandList가 비어 있습니다.")
+        if show_raw: st.json(data)
+        return None
+
+    df = pd.DataFrame(items)
+
+    # 3) 표(가독성 좋은 컬럼만) + 포맷
+    colmap = {
+        "crtcrdUseDd": "사용일자",
+        "crtcrdUseHh": "사용시간",
+        "crdcoNm": "카드사",
+        "mcnsNm": "가맹점",
+        "mcnsBntpNm": "업종",
+        "usePrc": "사용금액",
+        "applPrc": "신청금액",
+        "cstApplStatNm": "신청상태",
+        "prsnPayDd": "결제일자",
+        "slsRcvNo": "영수증번호",
+        "slsAcptNo": "접수번호",
+        "regYn": "등록여부",
+        "rtnYn": "환불여부",
+    }
+    keep = [c for c in colmap if c in df.columns]
+    view = df[keep].rename(columns=colmap)
+
+    if "사용시간" in view.columns:
+        view["사용시간"] = (
+            view["사용시간"].fillna("").astype(str)
+            .str.replace(r"\D", "", regex=True).str.zfill(6)
+            .str.replace(r"(\d{2})(\d{2})(\d{2})", r"\1:\2:\3", regex=True)
+        )
+    for c in ["사용금액", "신청금액"]:
+        if c in view.columns:
+            view[c] = pd.to_numeric(view[c], errors="coerce").fillna(0).astype(int).map(lambda x: f"{x:,}")
+
+    # 4) 요약/집계 출력
+    st.subheader("복지카드 차감신청 내역")
+    use_sum = pd.to_numeric(df.get("usePrc"), errors="coerce").fillna(0).sum()
+    appl_sum = pd.to_numeric(df.get("applPrc"), errors="coerce").fillna(0).sum()
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric("건수", f"{len(df):,}")
+    c2.metric("사용금액 합계", f"{int(use_sum):,}")
+    c3.metric("신청금액 합계", f"{int(appl_sum):,}")
+
+    if "cstApplStatNm" in df.columns:
+        stat = df["cstApplStatNm"].fillna("미상").value_counts().rename_axis("신청상태").reset_index(name="건수")
+        st.dataframe(stat, use_container_width=True, hide_index=True)
+
+    st.dataframe(view, use_container_width=True, hide_index=True)
+
+    if show_detail:
+        with st.expander("상세(원본 필드)"):
+            for i, it in enumerate(items, 1):
+                title = f"{i}. {it.get('crtcrdUseDd','')} / {it.get('mcnsNm','')} / {it.get('cstApplStatNm','')}"
+                with st.expander(title, expanded=False):
+                    st.json({k: v for k, v in it.items() if v not in (None, "")})
+
+    if show_raw:
+        with st.expander("원문(JSON)"):
+            st.json(data)
+
+    return df
 
 chosen_id = stx.tab_bar(data=[
     stx.TabBarItemData(id=1, title="KOFIABOND", description="with Selenium"),
