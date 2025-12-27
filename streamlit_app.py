@@ -474,8 +474,8 @@ def run_benecafe(playwright):
 
         resp = context.request.get(api_url, timeout=60_000)
         st.write(f"[benecafe] API status = {resp.status}")
-        st.write(api_url)
-        st.write(resp.text())
+        # st.write(api_url)
+        # st.write(resp.text())
 
         if resp.status != 200:
             dump_debug(f"api_status_{resp.status}")
