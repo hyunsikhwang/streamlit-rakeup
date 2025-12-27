@@ -419,29 +419,22 @@ def run_lottery_all(playwright: Playwright) -> pd.DataFrame:
 
     return df_all
 
-def run_benecafe(playwright: Playwright):
+def run_benecafe(playwright):
+    user_id = st.secrets["benecafe"]["id"]
+    user_pw = st.secrets["benecafe"]["password"]
 
-    id = st.secrets["benecafe"]["id"]
-    pw = st.secrets["benecafe"]["password"]
-
-    # Streamlit Cloud(컨테이너)에서 크로미움 안정화 플래그
     browser = playwright.chromium.launch(
         headless=True,
         args=["--no-sandbox", "--disable-dev-shm-usage"]
     )
-    context = browser.new_context(
-        ignore_https_errors=True,
-        locale="ko-KR",
-        timezone_id="Asia/Seoul",
-    )
-    context.set_default_timeout(60_000)  # 전역 기본 타임아웃
+    context = browser.new_context(ignore_https_errors=True, timezone_id="Asia/Seoul", locale="ko-KR")
+    context.set_default_timeout(60_000)  # 기본 타임아웃
     page = context.new_page()
 
     debug_dir = Path("debug")
     debug_dir.mkdir(exist_ok=True)
 
     def dump_debug(tag: str):
-        # UI redaction을 피하려면, 스크린샷/HTML을 남겨서 원인 파악
         try:
             page.screenshot(path=str(debug_dir / f"benecafe_{tag}.png"), full_page=True)
         except Exception:
@@ -452,55 +445,48 @@ def run_benecafe(playwright: Playwright):
             pass
 
     try:
+        # 1) 로그인 페이지
         page.goto("https://cert.benecafe.co.kr/member/login?&cmpyNo=AA5", wait_until="domcontentloaded")
-        page.get_by_placeholder("아이디").click()
-        page.get_by_placeholder("아이디").fill(id)
-        page.get_by_placeholder("비밀번호").click()
-        page.get_by_placeholder("비밀번호").fill(pw)
+
+        # 2) 입력 및 로그인 클릭
+        page.get_by_placeholder("아이디").fill(user_id)
+        page.get_by_placeholder("비밀번호").fill(user_pw)
         page.get_by_role("link", name="로그인", exact=True).click()
-        page.wait_for_load_state("networkidle")
 
-        # 3) 로그인 성공 신호 확인 (실패 시 여기서 예외/타임아웃)
-        page.wait_for_selector('text="나의정보"', timeout=30_000)
+        # ❌ page.wait_for_load_state("networkidle")  # <- 이 줄이 지금 문제의 원인입니다.
 
-        # 4) (있으면) 팝업 닫기
+        # 3) 로그인 성공의 “확정 신호”를 기다림 (요소 기반)
+        page.wait_for_selector('text="나의정보"', timeout=60_000)
+
+        # 4) 팝업 닫기 (있으면)
         close_btn = page.get_by_role("link", name="닫기")
         if close_btn.count() > 0:
             close_btn.first.click()
-        
-        start_date = 20251101
-        end_date = 20251201
-        # 5) “페이지 이동(page.goto)” 대신, 동일 컨텍스트 쿠키로 API GET
+
+        # 5) 데이터 호출은 page.goto 대신 context.request로 (세션/쿠키 공유)
+        #    날짜는 예시(기존 하드코딩 유지). 필요하면 UI 입력으로 바꾸세요.
         api_url = (
             "https://rga.benecafe.co.kr/mywel/getWelfarecardDemandListVer"
             "?crdcoNo=HA&rtnTpCd=&crtcrdProdNo=&ecluCrtcrdRealHhAskYn=N&necluCrtcrdRealHhAskYn=N"
-            f"&searchStartDate={start_date}&searchEndDate={end_date}"
+            "&searchStartDate=2025-11-26&searchEndDate=2025-12-26"
             "&applStatCd=00&alreadyApplicationExclustion=&multiCrtcrdRealYn=false&adminPswd="
         )
 
         resp = context.request.get(api_url, timeout=60_000)
         st.write(f"[benecafe] API status = {resp.status}")
 
-        body = resp.text()
-
-        # 상태가 200이 아니면, 디버그 덤프 후 에러로 처리
         if resp.status != 200:
             dump_debug(f"api_status_{resp.status}")
             raise RuntimeError(f"Benecafe API returned HTTP {resp.status}")
 
-        return body
+        return resp.text()
 
-    except PlaywrightTimeoutError as e:
+    except PlaywrightTimeoutError:
         dump_debug("timeout")
-        # Streamlit UI redaction을 피하도록 요약 출력(민감정보 제외)
-        st.error(f"Playwright timeout at Benecafe flow: {type(e).__name__}")
         raise
-
-    except PlaywrightError as e:
+    except PlaywrightError:
         dump_debug("playwright_error")
-        st.error(f"Playwright error at Benecafe flow: {type(e).__name__}")
         raise
-
     finally:
         try:
             context.close()
