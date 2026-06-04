@@ -704,8 +704,8 @@ elif chosen_id == '2':
     
     codes = codes.upper().replace(' ', '').split(',')
 
-    fstYr = placeholder.selectbox("Select first year", options=range(2010, 2023), index=0)
-    lstYr = placeholder.selectbox("Select last year", options=range(2010, 2023), index=2023-2010-1)
+    fstYr = placeholder.selectbox("Select first year", options=range(2010, 2025), index=0)
+    lstYr = placeholder.selectbox("Select last year", options=range(2010, 2025), index=2025-2010-1)
 
     if press_button:
         df = pd.DataFrame()
