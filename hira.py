@@ -1,10 +1,17 @@
 import logging
+import re
 import time
-from io import StringIO
+from io import BytesIO, StringIO
+from math import isfinite
+from xml.etree.ElementTree import ParseError
+from zipfile import BadZipFile, ZipFile
 
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
+from defusedxml.common import DefusedXmlException
+from openpyxl import load_workbook
+from openpyxl.utils.exceptions import InvalidFileException
 
 
 logger = logging.getLogger(__name__)
@@ -21,6 +28,95 @@ _RETRY_STATUSES = {500, 502, 503, 504}
 
 class HiraLookupError(Exception):
     """A failed lookup with a message safe to display in Streamlit."""
+
+
+class HiraExportError(Exception):
+    """An invalid HIRA spreadsheet with a message safe to display."""
+
+
+HIRA_PROCEDURE_PORTAL = _BASE_URL + _ROUTES[3][0]
+HIRA_EXPORT_MAX_MB = 2
+_OUTPUT_COLUMNS = ["항목", "심사년도", "항목구분", "성별구분", "연령구분", "value"]
+_EXPORT_TITLE = re.compile(r"진료행위_성별연령5세구간별현황\(단위_명, 회, 천원\)_(\d{4})_(\d{4})")
+_EXPORT_METRICS = ("환자수", "총사용량", "진료금액")
+_INVALID_EXPORT = "심평원 진료행위 통계의 ‘성별/연령5세구간별’ 탭에서 심사년도로 조회해 받은 .xlsx 파일을 올려 주세요."
+
+
+def parse_hira_procedure_export(content):
+    """Convert the portal's annual procedure export to the live lookup schema."""
+    if len(content) > HIRA_EXPORT_MAX_MB * 1024**2:
+        raise HiraExportError(f"파일이 너무 큽니다. {HIRA_EXPORT_MAX_MB}MB 이하의 .xlsx 파일을 올려 주세요.")
+
+    stream = BytesIO(content)
+    try:
+        with ZipFile(stream) as archive:
+            members = archive.infolist()
+            if len(members) > 100 or sum(m.file_size for m in members) > 10 * 1024**2:
+                raise HiraExportError("파일을 펼쳤을 때 크기가 너무 큽니다. 심평원 원본 파일을 올려 주세요.")
+        stream.seek(0)
+        book = load_workbook(stream, read_only=True, keep_links=False)
+        try:
+            if len(book.worksheets) != 1:
+                raise HiraExportError(_INVALID_EXPORT)
+            sheet = book.worksheets[0]
+            if (sheet.max_row or 0) > 250 or (sheet.max_column or 0) > 200:
+                raise HiraExportError(_INVALID_EXPORT)
+            rows = list(sheet.iter_rows(max_row=251, max_col=200, values_only=True))
+        finally:
+            book.close()
+    except (BadZipFile, InvalidFileException, OSError, ValueError, KeyError, IndexError,
+            TypeError, AttributeError, RuntimeError, ParseError, DefusedXmlException) as exc:
+        raise HiraExportError("엑셀 파일을 읽을 수 없습니다. 심평원에서 받은 .xlsx 원본인지 확인해 주세요.") from exc
+
+    if len(rows) < 4:
+        raise HiraExportError(_INVALID_EXPORT)
+    title = _EXPORT_TITLE.fullmatch(str(rows[0][0]))
+    if not title:
+        raise HiraExportError(_INVALID_EXPORT)
+    first, last = map(int, title.groups())
+    year_count = last - first + 1
+    if not 1 <= year_count <= 65:
+        raise HiraExportError(_INVALID_EXPORT)
+
+    years = [f"{year}년" for year in range(first, last + 1)]
+    width = 3 + 3 * year_count
+    year_header, metric_header = rows[2:4]
+    if (
+        year_header[2] != "심사년도"
+        or list(year_header[3:width:3]) != years
+        or metric_header[:width] != ("항목", "성별구분", "연령구분5세") + _EXPORT_METRICS * year_count
+        or any(cell is not None for cell in metric_header[width:])
+    ):
+        raise HiraExportError(_INVALID_EXPORT)
+
+    data = []
+    for row in rows[4:]:
+        if not any(cell is not None for cell in row):
+            continue
+        code, sex, age = row[:3]
+        if (
+            not re.fullmatch(r"[A-Z0-9]{5,9}", str(code))
+            or sex not in ("계", "남", "여")
+            or not re.fullmatch(r"계|소계|\d{1,3}(?:[_~–-]\d{1,3})?세(?:미만|이상)?", str(age))
+            or any(cell is not None for cell in row[width:])
+        ):
+            raise HiraExportError("통계표에 올바르지 않은 항목·성별·연령 값이 있습니다. 심평원 원본 파일을 확인해 주세요.")
+        values = tuple(0 if cell == "-" else cell for cell in row[3:width])
+        if any(type(cell) not in (int, float) or not isfinite(cell) or cell < 0 for cell in values):
+            raise HiraExportError("통계표에 비어 있거나 숫자가 아닌 통계 값이 있습니다. 심평원 원본 파일을 확인해 주세요.")
+        data.append((str(code), sex, age, values))
+
+    if not data:
+        raise HiraExportError("업로드한 파일에 변환할 통계 데이터가 없습니다.")
+    if len({code for code, _, _, _ in data}) != 1 or len({row[:3] for row in data}) != len(data):
+        raise HiraExportError("통계표에 코드가 섞여 있거나 중복 행이 있습니다. 한 코드의 심평원 원본 파일을 올려 주세요.")
+
+    return pd.DataFrame.from_records(
+        ((code, year, metric, sex, age, values[3 * i + j])
+         for i, year in enumerate(years) for j, metric in enumerate(_EXPORT_METRICS)
+         for code, sex, age, values in data),
+        columns=_OUTPUT_COLUMNS,
+    )
 
 
 def _fetch_page(url, params):
@@ -64,7 +160,7 @@ def _parse_table(page):
 
     df[["심사년도", "항목구분"]] = df["variable"].str.split("_", expand=True)
     df = df.rename(columns={"심사년도_연령구분5세": "연령구분"})
-    df = df[["항목", "심사년도", "항목구분", "성별구분", "연령구분", "value"]].copy()
+    df = df[_OUTPUT_COLUMNS].copy()
     df["value"] = pd.to_numeric(df["value"], errors="coerce").fillna(0)
     return df
 

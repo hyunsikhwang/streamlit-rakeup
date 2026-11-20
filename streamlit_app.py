@@ -31,7 +31,14 @@ import json, html
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import Error as PlaywrightError
 from pathlib import Path
-from hira import HiraLookupError, call_HIRA_new
+from hira import (
+    HIRA_EXPORT_MAX_MB,
+    HIRA_PROCEDURE_PORTAL,
+    HiraExportError,
+    HiraLookupError,
+    call_HIRA_new,
+    parse_hira_procedure_export,
+)
 
 
 st.title("Scraping in streamlit cloud")
@@ -667,6 +674,8 @@ elif chosen_id == '2':
     fstYr = placeholder.selectbox("Select first year", options=range(2010, 2025), index=0)
     lstYr = placeholder.selectbox("Select last year", options=range(2010, 2025), index=2025-2010-1)
 
+    is_procedure = datatype_dict[datatype] == 3
+    failed = False
     if press_button:
         results = []
         for code in stqdm(codes):
@@ -674,6 +683,7 @@ elif chosen_id == '2':
                 df_code = call_HIRA_new(datatype_dict[datatype], code, fstYr, lstYr)
             except HiraLookupError as exc:
                 placeholder.warning(f'{code}: {exc}')
+                failed = True
                 continue
             results.append((code, df_code))
 
@@ -687,6 +697,38 @@ elif chosen_id == '2':
                 data=to_excel(df),
                 file_name=f'HIRA_{datatype_dict[datatype]}_{result_code}_{fstYr}_{lstYr}.xlsx',
             )
+
+    if is_procedure:
+        upload_key = "hira_procedure_export"
+        with placeholder.expander(
+            "심평원 엑셀 가져오기", expanded=failed or st.session_state.get(upload_key) is not None,
+        ):
+            st.markdown(
+                f"[심평원 진료행위 통계]({HIRA_PROCEDURE_PORTAL})에서 코드를 선택하고 "
+                "**성별/연령5세구간별** 탭에서 **심사년도**로 조회한 뒤 **엑셀 다운로드**를 누르세요."
+            )
+            st.caption("실시간 조회 없이 파일에 들어 있는 코드와 연도를 사용합니다.")
+            uploaded = st.file_uploader(
+                "심평원 원본 엑셀 (.xlsx)", type=["xlsx"], key=upload_key, max_upload_size=HIRA_EXPORT_MAX_MB,
+            )
+            if uploaded is not None:
+                try:
+                    imported = parse_hira_procedure_export(uploaded.getvalue())
+                except HiraExportError as exc:
+                    st.error(str(exc))
+                else:
+                    import_code = imported["항목"].iloc[0]
+                    import_years = imported["심사년도"]
+                    start_year, end_year = import_years.iloc[0][:-1], import_years.iloc[-1][:-1]
+                    st.success(f"{import_code} · {start_year}~{end_year}년 · 공식 엑셀에서 가져옴")
+                    st.dataframe(imported, hide_index=True)
+                    st.download_button(
+                        "변환한 엑셀 다운로드",
+                        data=to_excel(imported),
+                        file_name=f'HIRA_3_{import_code}_{start_year}_{end_year}_import.xlsx',
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        on_click="ignore",
+                    )
 elif chosen_id == '3':
     placeholder.subheader("KOFIABOND")
     if press_button:
