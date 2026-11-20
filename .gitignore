@@ -1,1 +1,3 @@
 *.ini
+.venv/
+.streamlit/secrets.toml
