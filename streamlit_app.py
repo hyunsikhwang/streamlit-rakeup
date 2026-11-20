@@ -36,7 +36,7 @@ from hira import (
     HIRA_PROCEDURE_PORTAL,
     HiraExportError,
     HiraLookupError,
-    call_HIRA_new,
+    lookup_hira,
     parse_hira_procedure_export,
 )
 
@@ -675,27 +675,36 @@ elif chosen_id == '2':
     lstYr = placeholder.selectbox("Select last year", options=range(2010, 2025), index=2025-2010-1)
 
     is_procedure = datatype_dict[datatype] == 3
+    if is_procedure:
+        placeholder.caption("Scraping을 누르면 심평원 공식 엑셀을 자동으로 받아 변환합니다.")
     failed = False
     if press_button:
         results = []
         for code in stqdm(codes):
             try:
-                df_code = call_HIRA_new(datatype_dict[datatype], code, fstYr, lstYr)
+                df_code, from_excel = lookup_hira(datatype_dict[datatype], code, fstYr, lstYr)
             except HiraLookupError as exc:
-                placeholder.warning(f'{code}: {exc}')
+                placeholder.warning(f'{code or "코드 미입력"}: {exc}')
                 failed = True
                 continue
-            results.append((code, df_code))
+            results.append((code, df_code, from_excel))
 
         if results:
-            df = pd.concat([result for _, result in results])
+            df = pd.concat([result for _, result, _ in results], ignore_index=True)
+            if is_procedure:
+                for from_excel, label in ((True, "공식 엑셀 자동 변환"), (False, "심평원 통계표 조회")):
+                    source_codes = [code for code, _, source in results if source == from_excel]
+                    if source_codes:
+                        placeholder.caption(f"{label}: {', '.join(source_codes)}")
             placeholder.write(df)
 
             result_code = results[0][0] if len(results) == 1 else 'multiple'
             st.download_button(
-                label="📥 Download Current Result",
+                label="최종 결과 엑셀 다운로드" if is_procedure else "📥 Download Current Result",
                 data=to_excel(df),
                 file_name=f'HIRA_{datatype_dict[datatype]}_{result_code}_{fstYr}_{lstYr}.xlsx',
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                on_click="ignore",
             )
 
     if is_procedure:

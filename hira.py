@@ -3,6 +3,7 @@ import re
 import time
 from io import BytesIO, StringIO
 from math import isfinite
+from urllib.parse import urlencode
 from xml.etree.ElementTree import ParseError
 from zipfile import BadZipFile, ZipFile
 
@@ -165,9 +166,8 @@ def _parse_table(page):
     return df
 
 
-def call_HIRA_new(datatype, code, fstYr, lstYr):
-    path, prefix = _ROUTES[datatype]
-    params = {
+def _query_params(prefix, code, fstYr, lstYr):
+    return {
         "olapCd": prefix + code,
         "tabGubun": "Tab2",
         "gubun": "R",
@@ -178,6 +178,60 @@ def call_HIRA_new(datatype, code, fstYr, lstYr):
         "sYm": "",
         "eYm": "",
     }
+
+
+def _fetch_procedure_export(code, first_year, last_year):
+    form = {"searchWrd": code, **_query_params(_ROUTES[3][1], code, first_year, last_year)}
+    with requests.post(
+        _BASE_URL + "downExcelDiagBhvInfo.do",
+        data=form,
+        headers={"Referer": f"{HIRA_PROCEDURE_PORTAL}?{urlencode(form)}"},
+        timeout=(5, 12),
+        stream=True,
+        allow_redirects=False,
+    ) as response:
+        response.raise_for_status()
+        if response.status_code != 200:
+            raise HiraExportError("다운로드 주소가 변경되었습니다.")
+        content = bytearray()
+        for chunk in response.iter_content(chunk_size=64 * 1024):
+            content.extend(chunk)
+            if len(content) > HIRA_EXPORT_MAX_MB * 1024**2:
+                raise HiraExportError("다운로드 파일이 너무 큽니다.")
+    result = parse_hira_procedure_export(content)
+    if result["항목"].unique().tolist() != [code] or result["심사년도"].unique().tolist() != [
+        f"{year}년" for year in range(first_year, last_year + 1)
+    ]:
+        raise HiraExportError("다운로드한 통계의 코드 또는 연도가 조회 조건과 다릅니다.")
+    return result
+
+
+def lookup_hira(datatype, code, first_year, last_year):
+    """Return the result and whether it came from the official Excel export."""
+    if datatype != 3:
+        return call_HIRA_new(datatype, code, first_year, last_year), False
+    if not re.fullmatch(r"[A-Z0-9]{5,9}", code):
+        raise HiraLookupError("진료행위 코드를 확인해 주세요(예: U2233).")
+    if not 1 <= last_year - first_year + 1 <= 65:
+        raise HiraLookupError("시작 연도와 종료 연도를 확인해 주세요.")
+    try:
+        return _fetch_procedure_export(code, first_year, last_year), True
+    except (requests.RequestException, HiraExportError) as exc:
+        status = exc.response.status_code if isinstance(exc, requests.RequestException) and exc.response is not None else None
+        logger.warning("HIRA %s Excel download failed: %s (status=%s)", code, type(exc).__name__, status)
+        if status in (401, 403, 429):
+            raise HiraLookupError(f"심평원 엑셀 다운로드가 제한되었습니다(HTTP {status}).") from exc
+        if isinstance(exc, requests.exceptions.SSLError):
+            raise HiraLookupError("심평원 서버와 보안 연결을 설정하지 못했습니다.") from exc
+    try:
+        return call_HIRA_new(datatype, code, first_year, last_year), False
+    except HiraLookupError as exc:
+        raise HiraLookupError(f"공식 엑셀을 자동으로 받지 못했습니다. 통계표 조회도 실패했습니다: {exc}") from exc
+
+
+def call_HIRA_new(datatype, code, fstYr, lstYr):
+    path, prefix = _ROUTES[datatype]
+    params = _query_params(prefix, code, fstYr, lstYr)
     page = _fetch_page(_BASE_URL + path, params)
     try:
         return _parse_table(page)
