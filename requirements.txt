@@ -7,8 +7,6 @@ pandas
 requests
 html5lib
 lxml
-openpyxl
-defusedxml
 numpy
 extra_streamlit_components
 xlsxwriter
