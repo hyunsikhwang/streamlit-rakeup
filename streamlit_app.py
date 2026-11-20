@@ -18,7 +18,6 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import time
 import re
-import requests
 import numpy as np
 import extra_streamlit_components as stx
 from io import BytesIO
@@ -32,6 +31,7 @@ import json, html
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import Error as PlaywrightError
 from pathlib import Path
+from hira import HiraLookupError, call_HIRA_new
 
 
 st.title("Scraping in streamlit cloud")
@@ -237,46 +237,6 @@ def call_HIRA():
         df = take_HIRA_data(code=code, datatype=datatype, tabletype=tabletype)
 
     st.write(df)
-
-def call_HIRA_new(datatype, code, fstYr, lstYr):
-
-    if datatype == 1:
-        # 질병 소분류(3단 상병) 통계
-        url = f"https://opendata.hira.or.kr/op/opc/olap3thDsInfoTab2.do?olapCd=A{code}&tabGubun=Tab2&gubun=R&sRvYr={fstYr}&eRvYr={lstYr}&sDiagYm=&eDiagYm=&sYm=&eYm="
-    elif datatype == 2:
-        # 질병 세분류(4단 상병) 통계
-        url = f"https://opendata.hira.or.kr/op/opc/olap4thDsInfoTab2.do?olapCd=A{code}&tabGubun=Tab2&gubun=R&sRvYr={fstYr}&eRvYr={lstYr}&sDiagYm=&eDiagYm=&sYm=&eYm="
-    elif datatype == 3:
-        # 진료행위(검사/수술 등) 통계
-        url = f"https://opendata.hira.or.kr/op/opc/olapDiagBhvInfoTab2.do?olapCd=1{code}&tabGubun=Tab2&gubun=R&sRvYr={fstYr}&eRvYr={lstYr}&sDiagYm=&eDiagYm=&sYm=&eYm="
-    
-    res = requests.get(url)
-    soup = BeautifulSoup(res.text, 'lxml')
-    result = soup.find(attrs={'class':'tblType02 data webScroll'})
-
-    df = pd.read_html(str(result))[0]
-    df = df.dropna(axis=0)
-
-    df.columns = ['_'.join(col).strip() for col in df.columns.values]
-
-    column = []
-    for col in df.columns:
-        if 'Unnamed' in col:
-            col = col.split('_')[3]
-        column.append(col)
-
-    df.columns = column
-    df = df.melt(id_vars=['항목', '성별구분', '심사년도_연령구분5세'])
-
-    df[['심사년도', '항목구분']] = df['variable'].str.split('_', expand=True)
-    df.rename(columns={'심사년도_연령구분5세':'연령구분'}, inplace=True)
-    df.drop(['variable'], axis='columns', inplace=True)
-    df = df[['항목', '심사년도', '항목구분', '성별구분', '연령구분', 'value']]
-    
-    df['value'] = pd.to_numeric(df['value'], errors='coerce')
-    df['value'] = df['value'].fillna(0)
-
-    return df
 
 def to_excel(df):
     output = BytesIO()
@@ -708,20 +668,24 @@ elif chosen_id == '2':
     lstYr = placeholder.selectbox("Select last year", options=range(2010, 2025), index=2025-2010-1)
 
     if press_button:
-        df = pd.DataFrame()
+        results = []
         for code in stqdm(codes):
-            df_code = call_HIRA_new(datatype_dict[datatype], code, fstYr, lstYr)
-            df = pd.concat([df, df_code])
+            try:
+                df_code = call_HIRA_new(datatype_dict[datatype], code, fstYr, lstYr)
+            except HiraLookupError as exc:
+                placeholder.warning(f'{code}: {exc}')
+                continue
+            results.append((code, df_code))
 
-        placeholder.write(df)
+        if results:
+            df = pd.concat([result for _, result in results])
+            placeholder.write(df)
 
-        file_name = f'HIRA_{datatype_dict[datatype]}_{code}_{fstYr}_{lstYr}.xlsx'
-        df_xlsx = to_excel(df)
-
-        download = st.download_button(
-            label="📥 Download Current Result",
-            data=df_xlsx,
-            file_name=file_name,
+            result_code = results[0][0] if len(results) == 1 else 'multiple'
+            st.download_button(
+                label="📥 Download Current Result",
+                data=to_excel(df),
+                file_name=f'HIRA_{datatype_dict[datatype]}_{result_code}_{fstYr}_{lstYr}.xlsx',
             )
 elif chosen_id == '3':
     placeholder.subheader("KOFIABOND")
